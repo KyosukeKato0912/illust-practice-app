@@ -698,7 +698,13 @@ class _DrawingMainScreenState extends State<DrawingMainScreen> {
 
             // ── コントロールボタン ──────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.fromLTRB(
+                0,
+                AppValues.controlRowPadding,
+                0,
+                AppValues.controlRowPadding +
+                    MediaQuery.paddingOf(context).bottom,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

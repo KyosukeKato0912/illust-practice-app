@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/habit_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -7,7 +8,9 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../shared/components/app_bar_widget.dart';
 import '../../../shared/components/banner_ad_widget.dart';
-import 'habit_testdata.dart';
+import '../../growth/domain/growth_record.dart';
+import '../../growth/state/growth_provider.dart';
+import '../../../shared/testdata/growth_testdata.dart';
 
 // ══════════════════════════════════════════════════════════
 // 習慣化サポート メイン画面
@@ -19,17 +22,24 @@ import 'habit_testdata.dart';
 //   3行目：記録エリア（花丸・作業時間吹き出し）
 // 行高比は 1 : 1 : 3。
 // 余白・パディング・カラーは AppValues / AppColors の共通定数を使用。
-// ⚠ テストデータ使用中：habit_testdata.dart を参照。
-//   成長記録実装後は HabitRecord（Hive）からのデータ取得に差し替える。
+//
+// ⚠ 専用のHabitRecordモデルは持たない。
+//   データは成長記録（GrowthRecord・growthProvider）を参照する。
+//   成長記録で画像を登録（ファイル・写真いずれか）したタイミングに
+//   のみデータが作られる。習慣化サポート・成長記録どちらの
+//   継続カレンダーも同じデータを参照する（メリハリタイマー自体は
+//   記録を作らない）。
+//   作業時間の吹き出しには GrowthRecord.durationMin（アップロード時に
+//   任意入力された所要時間）を使用する。
 // ══════════════════════════════════════════════════════════
-class HabitMainScreen extends StatefulWidget {
+class HabitMainScreen extends ConsumerStatefulWidget {
   const HabitMainScreen({super.key});
 
   @override
-  State<HabitMainScreen> createState() => _HabitMainScreenState();
+  ConsumerState<HabitMainScreen> createState() => _HabitMainScreenState();
 }
 
-class _HabitMainScreenState extends State<HabitMainScreen> {
+class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
   // ── 表示週の基準日（月曜日）────────────────────────────
   // 初期値：画面を開いた時点の今日が属する週の月曜日（initState で設定）
   late DateTime _weekMonday;
@@ -122,29 +132,34 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
     }
   }
 
-  // ── テストデータから表示週の日付ごとの作業時間合計を集計 ──
+  // ── 実データ（成長記録）から表示週の日付ごとの作業時間合計を集計 ──
   // 戻り値：キー＝"yyyy-MM-dd"、値＝その日の作業時間合計(分)
   // データがない日はマップに含まれない（= 花丸なし）。
-  Map<String, int> _buildDailyTotals(List<DateTime> weekDays) {
+  // GrowthRecord.durationMin はアップロード時の任意入力のため、
+  // 未入力（null）のレコードは0分として扱う。
+  Map<String, int> _buildDailyTotals(
+    List<DateTime> weekDays,
+    List<GrowthRecord> allRecords,
+  ) {
     final weekSet = {
       for (final d in weekDays) AppDateUtils.dateKey(d),
     };
     final Map<String, int> totals = {};
-    for (final r in HabitTestData.records) {
+    for (final r in allRecords) {
       final key = AppDateUtils.dateKey(r.date);
       if (weekSet.contains(key)) {
-        totals[key] = (totals[key] ?? 0) + r.workMinutes;
+        totals[key] = (totals[key] ?? 0) + (r.durationMin ?? 0);
       }
     }
     return totals;
   }
 
-  // ── テストデータ全体から「記録のある日付」の集合を作成 ──
+  // ── 実データ（成長記録）全体から「記録のある日付」の集合を作成 ──
   // 連続日数の判定には表示週外のデータも必要なため、
   // 表示週で絞り込む前の全期間データから集合を作る。
-  late final Set<String> _recordedDateKeys = {
-    for (final r in HabitTestData.records) AppDateUtils.dateKey(r.date),
-  };
+  Set<String> _buildRecordedDateKeys(List<GrowthRecord> allRecords) => {
+        for (final r in allRecords) AppDateUtils.dateKey(r.date),
+      };
 
   // ── 指定日が属する連続記録区間の「総日数」を計算する ────
   // 指定日自体に記録がない場合は 0 を返す。
@@ -155,14 +170,14 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
   // 「その日が含まれる連続区間が現時点で何日続いているか」で行う。
   // 例：6/1〜6/25まで毎日記録がある場合、6/21時点で区間長が21に達するため
   //     6/1〜6/21までのセルが一斉に濃い黄色になる。
-  int _streakSpanAt(DateTime date) {
+  int _streakSpanAt(DateTime date, Set<String> recordedDateKeys) {
     final key = AppDateUtils.dateKey(date);
-    if (!_recordedDateKeys.contains(key)) return 0;
+    if (!recordedDateKeys.contains(key)) return 0;
 
     // 過去方向の連続日数（指定日を含む）
     int backCount = 0;
     DateTime cursor = date;
-    while (_recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
+    while (recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
       backCount++;
       cursor = cursor.subtract(const Duration(days: 1));
     }
@@ -174,7 +189,7 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     while (!cursor.isAfter(todayDate) &&
-        _recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
+        recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
       forwardCount++;
       cursor = cursor.add(const Duration(days: 1));
     }
@@ -186,8 +201,8 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
   // 記録なし、または連続1日のみ：白
   // 区間長 2〜(しきい値-1)：薄い黄色
   // 区間長 しきい値以上：濃い黄色（区間全体が濃い黄色になる）
-  Color _streakColor(DateTime date) {
-    final span = _streakSpanAt(date);
+  Color _streakColor(DateTime date, Set<String> recordedDateKeys) {
+    final span = _streakSpanAt(date, recordedDateKeys);
     if (span < 2) return Colors.white;
     if (span < AppValues.habitStreakDarkThresholdDays) {
       return AppColors.habitStreakLight;
@@ -197,8 +212,17 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // HabitConfig.useTestData は GrowthConfig.useTestData と独立して
+    // 切替できる。true の間は growthProvider を経由せず、
+    // 共有テストデータ（shared/testdata/growth_testdata.dart）を直接使う。
+    // ダミー画像のコピーを含む非同期処理のため、初回読み込み中は
+    // 空リストとして扱う（AsyncValue.valueOrNull）。
+    final allRecords = HabitConfig.useTestData
+        ? ref.watch(growthTestDataProvider).valueOrNull ?? const []
+        : ref.watch(growthProvider);
     final weekDays = _weekDays;
-    final dailyTotals = _buildDailyTotals(weekDays);
+    final dailyTotals = _buildDailyTotals(weekDays, allRecords);
+    final recordedDateKeys = _buildRecordedDateKeys(allRecords);
 
     return Scaffold(
       appBar: AppBarWidget(
@@ -212,8 +236,13 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
                   .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
           return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-                horizontal: outerPad, vertical: 24),
+            padding: EdgeInsets.fromLTRB(
+              outerPad,
+              AppValues.settingsScrollPadding,
+              outerPad,
+              AppValues.settingsScrollPadding +
+                  MediaQuery.paddingOf(context).bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -319,13 +348,34 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
                   dailyTotals: dailyTotals,
                   streakColors: {
                     for (final d in weekDays)
-                      AppDateUtils.dateKey(d): _streakColor(d),
+                      AppDateUtils.dateKey(d): _streakColor(d, recordedDateKeys),
                   },
                   todayKey: AppDateUtils.dateKey(DateTime.now()),
                   openTooltipKey: _openTooltipKey,
                   onToggleTooltip: _toggleTooltip,
                 ),
                 const SizedBox(height: 32),
+
+                // ── 【検証用】登録件数表示 ────────────────────
+                if (HabitConfig.showDebugDataCount) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _DebugCountChip(
+                        label: AppStrings.habitDebugDataCountLabel,
+                        value: '${allRecords.length}'
+                            '${AppStrings.habitDebugDataCountSuffix}',
+                      ),
+                      const SizedBox(width: 12),
+                      _DebugCountChip(
+                        label: AppStrings.habitDebugDaysCountLabel,
+                        value: '${recordedDateKeys.length}'
+                            '${AppStrings.habitDebugDaysCountSuffix}',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                 // ── メリハリタイマーボタン ────────────────────
                 ElevatedButton.icon(
@@ -371,6 +421,48 @@ class _HabitMainScreenState extends State<HabitMainScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// 【検証用】登録件数チップ
+//
+// HabitConfig.showDebugDataCount が true の間のみ表示される。
+// ══════════════════════════════════════════════════════════
+class _DebugCountChip extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DebugCountChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.themeLight,
+        border: Border.all(color: AppColors.themeBorder),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.themeDark,
+            ),
+          ),
+        ],
       ),
     );
   }

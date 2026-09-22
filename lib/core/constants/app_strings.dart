@@ -119,6 +119,12 @@ abstract class AppStrings {
   static const String habitTimerButton = 'メリハリタイマー';
   static const String habitSettingsButton = '設定';
 
+  /// 【検証用】継続カレンダー下の件数表示ラベル
+  static const String habitDebugDataCountLabel = 'データ総数';
+  static const String habitDebugDaysCountLabel = '記録日数';
+  static const String habitDebugDataCountSuffix = '件';
+  static const String habitDebugDaysCountSuffix = '日分';
+
   // メリハリタイマー画面
   static const String habitTimerTitle = 'メリハリタイマー';
   static const String habitTimerStart = '開始';

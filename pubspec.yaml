@@ -51,6 +51,7 @@ dependencies:
   pdf: ^3.13.0  # 成長記録：画像一覧PDFの生成
   printing: ^5.15.0  # 成長記録：生成したPDFの共有・保存（Google Fontsによる日本語フォント取得にも使用）
   share_plus: ^12.0.2  # 成長記録：選択画像のSNS（X等）共有
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +78,7 @@ flutter:
     - assets/images/models/
     - assets/images/ui/
     - assets/images/ui/habit/
+    - assets/images/dummy/
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

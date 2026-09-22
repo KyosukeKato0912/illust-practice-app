@@ -19,4 +19,15 @@ abstract class GrowthConfig {
   /// フラグをリセットできるようにしている。
   /// ⚠ リリース時は必ず false にすること。
   static const bool showDebugResetMaxCountReachedButton = true;
+
+  /// 検証用：成長記録の一覧を実データ（Hive）の代わりに
+  /// shared/testdata/growth_testdata.dart のテストデータで表示するか
+  /// どうか。
+  ///
+  /// true の間は growthProvider の初期読み込みがテストデータに
+  /// 差し替わる（アップロード自体は通常どおりHiveに保存される）。
+  /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData で
+  /// 独立して管理しており、本フラグとは連動しない。
+  /// ⚠ リリース時は必ず false にすること。
+  static const bool useTestData = false;
 }

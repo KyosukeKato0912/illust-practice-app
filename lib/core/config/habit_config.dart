@@ -68,4 +68,24 @@ abstract class HabitConfig {
   /// 現在使用する花丸画像のアセットパスを返す。
   static String get currentFlowerCircleAssetPath =>
       flowerCircleAssetPath(defaultFlowerCircleId);
+
+  // ══════════════════════════════════════════════════════════
+  // 検証用フラグ
+  // ══════════════════════════════════════════════════════════
+
+  /// 【検証用】継続カレンダーの下に、現在登録されている件数
+  /// （データ総数・記録のある日数）を表示するかどうか。
+  /// ⚠ リリース時は必ず false にすること。
+  static const bool showDebugDataCount = true;
+
+  /// 【検証用】習慣化サポートの継続カレンダーを、実データ
+  /// （growthProvider）の代わりに shared/testdata/growth_testdata.dart
+  /// のテストデータで表示するかどうか。
+  ///
+  /// GrowthConfig.useTestData とは独立して切替できる
+  /// （例：成長記録メイン画面は実データのまま、習慣化サポート側だけ
+  /// テストデータで継続カレンダーの配色を確認する、といった使い方を
+  /// 想定）。
+  /// ⚠ リリース時は必ず false にすること。
+  static const bool useTestData = false;
 }

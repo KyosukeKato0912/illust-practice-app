@@ -30,9 +30,14 @@ import '../utils/date_utils.dart';
 //   ドキュメント全体を単一の pw.MultiPage として組み立て、表紙とグリッド
 //   ページの間は pw.NewPage() で明示的に改ページする（公式ドキュメントの
 //   「複数セクションをそれぞれ1ページに収める」パターンに準拠）。
-//   各セクションは pw.Expanded で包み、そのページの残り領域いっぱいに
-//   広げる（表紙の縦中央寄せ・グリッド内部の pw.Expanded 行が正しく
-//   高さを取得するために必要）。
+//
+// ⚠ pw.MultiPage の build: に渡すトップレベルの要素には高さの制約が
+//   与えられない（オートページネーションのため）。そのため表紙・グリッドを
+//   直接 pw.Expanded で包むと「incoming height constraints are
+//   unbounded」で例外になる。ヘッダー／フッターの高さを固定値で自前管理し、
+//   ページ本文の高さ（_contentHeight）を逆算したうえで、表紙・グリッドは
+//   その固定高さの pw.Container で包む。Container が高さを確定させるため、
+//   内部（_buildGrid など）で使っている pw.Expanded は問題なく機能する。
 //
 // UIからは build() のみを呼び出し、Documentの組み立て・画像読み込みは
 // このサービス内に閉じる。
@@ -41,6 +46,22 @@ abstract class GrowthPdfService {
   static const int _columns = 3;
   static const int _rows = 4;
   static const int _perPage = _columns * _rows;
+
+  // ページ余白・ヘッダー／フッターの高さは固定値として自前管理する
+  // （_buildHeader/_buildFooter もこの値に合わせて描画する）。
+  static const double _marginLeftRight = 28;
+  static const double _marginTop = 32;
+  static const double _marginBottom = 32;
+  static const double _headerHeight = 36;
+  static const double _footerHeight = 28;
+
+  /// 表紙・グリッドに割り当てられる本文の高さ（ヘッダー／フッターを除いた分）。
+  static double get _contentHeight =>
+      PdfPageFormat.a4.height -
+      _marginTop -
+      _marginBottom -
+      _headerHeight -
+      _footerHeight;
 
   /// [records] は成長記録の全件をそのまま渡す想定（絞込の影響は受けない）。
   /// 内部で日付昇順に並び替えてから表紙の対象期間・グリッドの並びを決める。
@@ -61,11 +82,17 @@ abstract class GrowthPdfService {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(28, 32, 28, 32),
+        margin: const pw.EdgeInsets.fromLTRB(
+          _marginLeftRight,
+          _marginTop,
+          _marginLeftRight,
+          _marginBottom,
+        ),
         header: (context) => _buildHeader(),
         footer: (context) => _buildFooter(context),
         build: (context) => [
-          pw.Expanded(
+          pw.Container(
+            height: _contentHeight,
             child: _buildCover(
               periodLabel: periodLabel,
               count: sorted.length,
@@ -73,7 +100,7 @@ abstract class GrowthPdfService {
           ),
           for (final chunk in chunks) ...[
             pw.NewPage(),
-            pw.Expanded(child: _buildGrid(chunk)),
+            pw.Container(height: _contentHeight, child: _buildGrid(chunk)),
           ],
         ],
       ),
@@ -87,7 +114,15 @@ abstract class GrowthPdfService {
     final y = now.year.toString().padLeft(4, '0');
     final m = now.month.toString().padLeft(2, '0');
     final d = now.day.toString().padLeft(2, '0');
-    return '${AppStrings.growthPdfFileNamePrefix}$y-$m-$d.pdf';
+    final hh = now.hour.toString().padLeft(2, '0');
+    final mm = now.minute.toString().padLeft(2, '0');
+    final ss = now.second.toString().padLeft(2, '0');
+    // file_picker のsaveFile()には同名ファイル存在時の連番付与に
+    // 既知の不具合があり、拡張子が壊れてしまう
+    // （https://github.com/miguelpruivo/flutter_file_picker/issues/1598）。
+    // 日付だけだと1日に複数回保存した際に衝突しやすいため、秒まで含めて
+    // 衝突自体を避ける。
+    return '${AppStrings.growthPdfFileNamePrefix}$y-$m-$d-$hh$mm$ss.pdf';
   }
 
   static List<List<GrowthRecord>> _chunk(List<GrowthRecord> list, int size) {
@@ -102,8 +137,8 @@ abstract class GrowthPdfService {
   // ── ヘッダー（全ページ共通） ─────────────────────────────
   static pw.Widget _buildHeader() {
     return pw.Container(
+      height: _headerHeight,
       alignment: pw.Alignment.center,
-      padding: const pw.EdgeInsets.only(bottom: 12),
       child: pw.Text(
         AppStrings.growthPdfHeaderTitle,
         style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
@@ -114,8 +149,8 @@ abstract class GrowthPdfService {
   // ── フッター（全ページ共通：ページ番号） ─────────────────
   static pw.Widget _buildFooter(pw.Context context) {
     return pw.Container(
+      height: _footerHeight,
       alignment: pw.Alignment.center,
-      padding: const pw.EdgeInsets.only(top: 12),
       child: pw.Text(
         '${context.pageNumber}',
         style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),

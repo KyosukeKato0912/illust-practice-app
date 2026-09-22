@@ -212,8 +212,13 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
                         .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
                 return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: outerPad, vertical: 24),
+                  padding: EdgeInsets.fromLTRB(
+                    outerPad,
+                    AppValues.settingsScrollPadding,
+                    outerPad,
+                    AppValues.settingsScrollPadding +
+                        MediaQuery.paddingOf(context).bottom,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

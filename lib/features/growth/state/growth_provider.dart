@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gal/gal.dart';
+import '../../../core/config/growth_config.dart';
 import '../../../core/utils/file_utils.dart';
+import '../../../shared/testdata/growth_testdata.dart';
 import '../domain/growth_record.dart';
 import '../domain/growth_repository.dart';
 
@@ -65,6 +67,11 @@ final growthMaxCountReachedProvider =
 //   ・上限到達時は growthMaxCountReachedProvider の state も更新し、
 //     PDFダウンロードボタンの表示条件（フラグが立っている間のみ表示）
 //     に反映する
+//   ・GrowthConfig.useTestData が true の間は [_loadAll]（初期読み込み・
+//     追加/削除後の再読込のいずれも）が shared/testdata/growth_testdata.dart
+//     のテストデータを返す。アップロード自体は通常どおりHiveに保存
+//     されるが、直後の _loadAll でテストデータに上書き表示される点に注意
+//     （テストデータ表示中は常に同じ内容を見せる一貫性を優先した設計）。
 // ══════════════════════════════════════════════════════════
 class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   final GrowthRepository _repository;
@@ -78,7 +85,9 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   }
 
   Future<void> _loadAll() async {
-    state = await _repository.getAll();
+    state = GrowthConfig.useTestData
+        ? await _ref.read(growthTestDataProvider.future)
+        : await _repository.getAll();
   }
 
   /// ギャラリー（写真）から画像を選択してアップロードする。

@@ -14,6 +14,29 @@ abstract class AppValues {
   /// 外側パディングの最大値（px）
   static const double outerPadMax = 240.0;
 
+  // ── 画面下部の余白（デザイン上のベース値） ───────────────
+  // 実際に確保する余白は必ず「本値 ＋ 端末の下部セーフエリア
+  // （ジェスチャーナビゲーションバー等。MediaQuery.paddingOf(context).bottom）」
+  // とすること。本値だけだと機種によりホームインジケーターに重なる。
+
+  /// 画面下部に固定表示するボタン行の下余白（成長記録メイン画面など）
+  static const double bottomActionRowPadding = 20.0;
+
+  /// 拡大表示画面のピンチヒントなど、画面最下部のヒント文言の下余白
+  static const double bottomHintPadding = 16.0;
+
+  /// X秒ドローイング メイン画面：再生コントロール行の上下余白
+  static const double controlRowPadding = 12.0;
+
+  /// 各種設定画面：スクロール本文の上下余白（基本値）
+  static const double settingsScrollPadding = 24.0;
+
+  /// 習慣化サポート タイマー画面：スクロール本文の上下余白
+  static const double habitTimerScrollPadding = 32.0;
+
+  /// サムネイル一覧（グリッド）の上下余白
+  static const double gridContentPadding = 12.0;
+
   // ── X秒ドローイング ─────────────────────────────────────
   /// 開始カウントダウン秒数
   static const int drawingCountdownSec = 3;
@@ -70,7 +93,9 @@ abstract class AppValues {
 
   // ── Hive typeId 一覧（重複登録防止のため一元管理） ─────
   // GrowthRecord   : typeId = 0  （実装済み）
-  // HabitRecord    : typeId = 1  （未実装）
+  //   ⚠ 習慣化サポートの継続カレンダーも本モデルを参照する
+  //     （専用のHabitRecordモデルは持たない。データは成長記録で
+  //     画像登録（ファイル・写真）した時にのみ作られる）
   // TopicHistory   : typeId = 2  （未実装）
   // AppSettings    : typeId = 3  （未実装）
 }

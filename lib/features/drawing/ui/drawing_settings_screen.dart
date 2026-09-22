@@ -202,8 +202,13 @@ class _DrawingSettingsScreenState extends State<DrawingSettingsScreen> {
                         .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
                 return ListView(
-                  padding:
-                      EdgeInsets.fromLTRB(outerPad, 24, outerPad, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    outerPad,
+                    AppValues.settingsScrollPadding,
+                    outerPad,
+                    AppValues.settingsScrollPadding +
+                        MediaQuery.paddingOf(context).bottom,
+                  ),
                   children: [
                     // ── 切り替え時間 ──────────────────────────
                     _SettingsSectionCard(

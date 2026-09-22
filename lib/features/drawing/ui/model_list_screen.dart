@@ -268,7 +268,13 @@ class _ModelThumbnailGrid extends StatelessWidget {
         const double childAspectRatio = 0.75;
 
         return GridView.builder(
-          padding: EdgeInsets.fromLTRB(outerPad, 12, outerPad, 12),
+          padding: EdgeInsets.fromLTRB(
+            outerPad,
+            AppValues.gridContentPadding,
+            outerPad,
+            AppValues.gridContentPadding +
+                MediaQuery.paddingOf(context).bottom,
+          ),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 10,

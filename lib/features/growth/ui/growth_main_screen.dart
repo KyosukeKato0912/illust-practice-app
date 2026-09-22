@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:cross_file/cross_file.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/config/growth_config.dart';
 import '../../../core/constants/app_colors.dart';
@@ -36,7 +36,7 @@ import '../state/growth_provider.dart';
 //
 // PDF書き出し: 下部の「イラストを保存」ボタンの右隣に配置したボタンから、
 // 絞込の影響を受けない全レコードを GrowthPdfService でPDF化し、
-// Printing.sharePdf経由で共有・保存する。
+// file_picker (FilePicker.platform.saveFile) 経由でOSの保存ダイアログから保存する。
 // このボタンは保持上限到達フラグ（growthMaxCountReachedProvider）が
 // 立っている間のみ表示する（上限に一度も到達していない間は非表示）。
 //
@@ -288,11 +288,24 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
     try {
       final bytes = await GrowthPdfService.build(records);
       if (!mounted) return;
-      await Printing.sharePdf(
+      // 共有シートではなくOSの保存ダイアログで直接保存する。
+      // モバイルではbytesを渡すとプラグイン側が選択先に書き込みまで行う。
+      await FilePicker.platform.saveFile(
+        fileName: GrowthPdfService.buildFileName(DateTime.now()),
+        // 拡張子・MIMEタイプを明示しないと、同名保存時にAndroid側が
+        // 「.pdf」を拡張子として認識できず、末尾にそのまま
+        // 「(1)」を付け足してしまい開けなくなる（正しくは拡張子の前に
+        // 付与されるべき）。type/allowedExtensionsで拡張子を明示することで
+        // 保存先アプリ側が名前の重複を拡張子の前で解決するようになる。
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
         bytes: bytes,
-        filename: GrowthPdfService.buildFileName(DateTime.now()),
       );
-    } catch (_) {
+    } catch (e, st) {
+      // 原因調査用の一時ログ（VSCode等のデバッグコンソールに出力）。
+      // スマホ側の表示は従来通りSnackBarのみ。
+      debugPrint('[GrowthPdfService] PDF生成に失敗しました: $e');
+      debugPrint('$st');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
@@ -533,7 +546,16 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
               // ── イラストを追加／イラストを保存／PDFでダウンロード ──
               Padding(
-                padding: EdgeInsets.fromLTRB(outerPad, 12, outerPad, 20),
+                // 20はデザイン上の余白。端末のジェスチャーナビゲーション
+                // バー（ホームインジケーター）と重ならないよう、
+                // 端末の下部セーフエリア分を追加で確保する。
+                padding: EdgeInsets.fromLTRB(
+                  outerPad,
+                  12,
+                  outerPad,
+                  AppValues.bottomActionRowPadding +
+                      MediaQuery.paddingOf(context).bottom,
+                ),
                 child: Row(
                   children: [
                     Expanded(

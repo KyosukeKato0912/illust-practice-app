@@ -69,6 +69,12 @@ class HabitTimerState {
 //   作業中タイマーが 0 → 自動で休憩タイマーに切替（タイマー継続）
 //   休憩中にリセットボタン → 作業中の開始時間に戻る（停止）
 //   作業中にリセットボタン → 作業中の開始時間に戻る（停止）
+//
+// ⚠ このタイマー自体は記録を永続化しない。
+//   継続カレンダーに表示されるデータは、成長記録（GrowthRecord）で
+//   画像を登録（ファイル・写真いずれか）したタイミングにのみ作られる。
+//   習慣化サポート・成長記録どちらの継続カレンダーも同じ
+//   GrowthRecord（growthProvider）を参照する。
 // ══════════════════════════════════════════════════════════
 class HabitTimerNotifier extends StateNotifier<HabitTimerState> {
   HabitTimerNotifier() : super(const HabitTimerState());

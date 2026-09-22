@@ -128,7 +128,13 @@ class _HabitTimerScreenState extends ConsumerState<HabitTimerScreen> {
                   .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
           return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: outerPad, vertical: 32),
+            padding: EdgeInsets.fromLTRB(
+              outerPad,
+              AppValues.habitTimerScrollPadding,
+              outerPad,
+              AppValues.habitTimerScrollPadding +
+                  MediaQuery.paddingOf(context).bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

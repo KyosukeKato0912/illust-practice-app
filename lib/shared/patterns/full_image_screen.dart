@@ -290,7 +290,13 @@ class _FullImageScreenState extends State<FullImageScreen> {
 
               // ── ピンチヒント ────────────────────────────────────
               Padding(
-                padding: EdgeInsets.fromLTRB(outerPad, 4, outerPad, 16),
+                padding: EdgeInsets.fromLTRB(
+                  outerPad,
+                  4,
+                  outerPad,
+                  AppValues.bottomHintPadding +
+                      MediaQuery.paddingOf(context).bottom,
+                ),
                 child: Text(
                   AppStrings.drawingPinchHint,
                   textAlign: TextAlign.center,
