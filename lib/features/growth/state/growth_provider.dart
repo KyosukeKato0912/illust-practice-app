@@ -7,6 +7,7 @@ import '../../../core/utils/file_utils.dart';
 import '../../../shared/testdata/growth_testdata.dart';
 import '../domain/growth_record.dart';
 import '../domain/growth_repository.dart';
+import 'growth_practice_log_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // GrowthMaxCountFlagNotifier / growthMaxCountReachedProvider
@@ -151,6 +152,9 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
       }
     }
     await _loadAll();
+    // 継続カレンダー用の練習日記録も更新する（アップロード完了画面が
+    // 表示される時点で最新の状態になっているようにするため、ここで待つ）
+    await _ref.read(growthPracticeLogProvider.notifier).reload();
 
     // 「生涯で初めて上限に到達したか」はRepository側の永続フラグで判定する
     // （現在の生存件数だけでは、削除→再アップロードでの再到達と

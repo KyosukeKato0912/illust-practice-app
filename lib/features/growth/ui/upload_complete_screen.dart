@@ -6,7 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
 import '../../../core/utils/date_utils.dart';
-import '../state/growth_provider.dart';
+import '../state/growth_practice_log_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // アップロード完了画面
@@ -104,7 +104,8 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final records = ref.watch(growthProvider);
+    // 練習日の記録（画像を削除しても残る）。GrowthConfig.useTestData に従う
+    final practiceDays = ref.watch(growthPracticeDaysProvider);
     final now = DateTime.now();
 
     final weeks = _buildMonthWeeks(now);
@@ -115,7 +116,7 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
     // 全期間の「記録のある日付」集合（連続日数の判定には表示月外の
     // データも必要なため、月で絞り込む前の全件から作成する）
     final recordedDateKeys = <String>{
-      for (final r in records) AppDateUtils.dateKey(r.date),
+      for (final d in practiceDays) AppDateUtils.dateKey(d.date),
     };
 
     // 表示グリッド内（前月末・翌月頭を含む）の日付ごとの追加枚数
@@ -124,17 +125,17 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
         for (final d in week) AppDateUtils.dateKey(d),
     };
     final Map<String, int> dailyCounts = {};
-    for (final r in records) {
-      final key = AppDateUtils.dateKey(r.date);
+    for (final d in practiceDays) {
+      final key = AppDateUtils.dateKey(d.date);
       if (gridSet.contains(key)) {
-        dailyCounts[key] = (dailyCounts[key] ?? 0) + 1;
+        dailyCounts[key] = (dailyCounts[key] ?? 0) + d.uploadCount;
       }
     }
 
-    // 今日の作業時間合計（durationMinがnullのレコードは0として扱う）
-    final todayTotalDurationMin = records
-        .where((r) => AppDateUtils.dateKey(r.date) == todayKey)
-        .fold<int>(0, (sum, r) => sum + (r.durationMin ?? 0));
+    // 今日の作業時間合計（所要時間未入力のアップロードは0分として集計済み）
+    final todayTotalDurationMin = practiceDays
+        .where((d) => AppDateUtils.dateKey(d.date) == todayKey)
+        .fold<int>(0, (sum, d) => sum + d.totalMinutes);
 
     return Scaffold(
       body: SafeArea(

@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart'
+    show CupertinoDatePicker, CupertinoDatePickerMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -7,6 +9,7 @@ import '../../../core/router/app_router.dart';
 import '../../../shared/components/app_bar_widget.dart';
 import '../../../shared/components/hold_repeat_icon_button.dart';
 import '../domain/habit_settings.dart';
+import '../state/habit_practice_provider.dart';
 import '../state/habit_settings_controller.dart';
 import '../state/habit_timer_notifier.dart';
 
@@ -78,7 +81,9 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
         }
         _reminderEnabled = saved.reminderEnabled;
         _reminderHour    = saved.reminderHour;
-        _reminderMinute  = saved.reminderMinute;
+        // 旧仕様（1分単位）で保存された値は、刻み単位に切り捨てて表示する
+        _reminderMinute  = saved.reminderMinute -
+            saved.reminderMinute % AppValues.habitReminderMinuteInterval;
         _comebackEnabled = saved.comebackEnabled;
         _comebackPeriod  = saved.comebackPeriod;
       }
@@ -86,7 +91,46 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
     });
   }
 
+  // 作業開始促進通知がONのとき、正確なアラーム権限が無ければ
+  // 説明ダイアログを出し、「設定を開く」で設定画面へ誘導する。
+  // キャンセルしても保存は続行する（その場合は数分ずれる可能性がある
+  // inexactモードで登録される）。
+  Future<void> _ensureExactAlarmPermission() async {
+    final granted =
+        await HabitSettingsController.isExactAlarmPermissionGranted();
+    if (granted || !mounted) return;
+
+    final openSettings = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppStrings.habitExactAlarmDialogTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(AppStrings.habitExactAlarmDialogMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(AppStrings.dialogCancel,
+                style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppStrings.habitExactAlarmDialogOpenSettings),
+          ),
+        ],
+      ),
+    );
+    if (openSettings != true) return;
+    await HabitSettingsController.requestExactAlarmPermission();
+  }
+
   Future<void> _saveSettings() async {
+    // 通知スケジュールの登録前に権限を確認する
+    if (_reminderEnabled) {
+      await _ensureExactAlarmPermission();
+      if (!mounted) return;
+    }
     await HabitSettingsController.save(
       isPreset:        _isPreset,
       timerMinutes:    _resolvedTimerMinutes,
@@ -96,6 +140,7 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
       reminderMinute:  _reminderMinute,
       comebackEnabled: _comebackEnabled,
       comebackPeriod:  _comebackPeriod,
+      lastPracticeDate: ref.read(habitLastPracticeDateProvider),
     );
     ref.read(habitTimerProvider.notifier).resetWithMinutes(
           minutes:      _resolvedTimerMinutes,
@@ -148,7 +193,9 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    await HabitSettingsController.clear();
+    await HabitSettingsController.clear(
+      lastPracticeDate: ref.read(habitLastPracticeDateProvider),
+    );
     setState(() {
       _isPreset        = HabitSettingsController.defaultIsPreset;
       _timerMinutes    = HabitSettingsController.defaultCustomTimerMinutes;
@@ -170,15 +217,58 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
   }
 
   // 時刻ピッカー
+  // 分は AppValues.habitReminderMinuteInterval（30分）刻みでのみ選べる。
+  // Material の showTimePicker は分の刻みを指定できないため、
+  // minuteInterval を持つ CupertinoDatePicker をボトムシートで使う。
   Future<void> _pickReminderTime() async {
-    final picked = await showTimePicker(
+    const interval = AppValues.habitReminderMinuteInterval;
+    final now = DateTime.now();
+    var selected = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _reminderHour,
+      _reminderMinute - _reminderMinute % interval,
+    );
+
+    final picked = await showModalBottomSheet<DateTime>(
       context: context,
-      initialTime: TimeOfDay(hour: _reminderHour, minute: _reminderMinute),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: AppColors.theme),
+      backgroundColor: Colors.white,
+      builder: (ctx) => SizedBox(
+        height: 300,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(AppStrings.dialogCancel,
+                        style: const TextStyle(color: Colors.grey)),
+                  ),
+                  Text(AppStrings.habitReminderTimeLabel,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, selected),
+                    child: Text(AppStrings.dialogDecide,
+                        style: const TextStyle(color: AppColors.theme)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: true,
+                minuteInterval: interval,
+                initialDateTime: selected,
+                onDateTimeChanged: (v) => selected = v,
+              ),
+            ),
+          ],
         ),
-        child: child!,
       ),
     );
     if (picked == null || !mounted) return;

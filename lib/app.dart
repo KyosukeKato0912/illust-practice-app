@@ -5,6 +5,7 @@ import 'core/router/app_router.dart';
 import 'core/constants/app_strings.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/habit/state/habit_practice_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // アプリルートウィジェット
@@ -21,6 +22,10 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 復帰促進通知：継続カレンダーの最終記録日の変化を監視して
+    // スケジュールを更新する（アプリ起動中は常駐）。
+    ref.watch(habitComebackSyncProvider);
+
     return MaterialApp(
       title: AppStrings.appTitle,
       // Web での SnackBar 表示のために NotificationService に渡すキー

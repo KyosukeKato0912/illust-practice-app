@@ -1,8 +1,10 @@
 import '../../../core/config/growth_config.dart';
 import '../../../data/datasources/growth_datasource.dart';
 import '../../../data/datasources/growth_meta_datasource.dart';
+import '../../../data/datasources/growth_practice_log_datasource.dart';
 import '../../../data/datasources/growth_serial_counter_datasource.dart';
 import 'growth_record.dart';
+import 'practice_day.dart';
 
 // ══════════════════════════════════════════════════════════
 // GrowthRepository
@@ -10,7 +12,14 @@ import 'growth_record.dart';
 // 成長記録のCRUDと、上限枚数（GrowthConfig.maxRecordCount）超過時の
 // 自動削除ロジックを担当する。
 // Hiveへのアクセスは GrowthDataSource / GrowthSerialCounterDataSource /
-// GrowthMetaDataSource 経由のみ（直接Boxを操作しない）。
+// GrowthMetaDataSource / GrowthPracticeLogDataSource 経由のみ
+// （直接Boxを操作しない）。
+//
+// ■ 継続カレンダー用の練習日記録
+//   アップロードのたびに [add] が練習日の記録（GrowthPracticeLogDataSource）
+//   へも書き込む。この記録は GrowthRecord の削除（手動削除・上限超過による
+//   自動削除）の影響を受けず、一度アップロードした日は残り続ける。
+//   継続カレンダーは [getPracticeDays] を参照する。
 //
 // ⚠ 画像ファイルの実体削除について
 //   本クラスはHiveレコードの削除のみを行い、端末ローカルの画像ファイル
@@ -23,15 +32,19 @@ class GrowthRepository {
   final GrowthDataSource _dataSource;
   final GrowthSerialCounterDataSource _serialCounterDataSource;
   final GrowthMetaDataSource _metaDataSource;
+  final GrowthPracticeLogDataSource _practiceLogDataSource;
 
   GrowthRepository({
     GrowthDataSource? dataSource,
     GrowthSerialCounterDataSource? serialCounterDataSource,
     GrowthMetaDataSource? metaDataSource,
+    GrowthPracticeLogDataSource? practiceLogDataSource,
   })  : _dataSource = dataSource ?? GrowthDataSource(),
         _serialCounterDataSource =
             serialCounterDataSource ?? GrowthSerialCounterDataSource(),
-        _metaDataSource = metaDataSource ?? GrowthMetaDataSource();
+        _metaDataSource = metaDataSource ?? GrowthMetaDataSource(),
+        _practiceLogDataSource =
+            practiceLogDataSource ?? GrowthPracticeLogDataSource();
 
   /// 全件取得（日付降順→連番降順の新しい順）
   Future<List<GrowthRecord>> getAll() async {
@@ -74,9 +87,39 @@ class GrowthRepository {
   ///
   /// 戻り値は自動削除された記録の一覧（通常は空、または1件）。
   /// 画像ファイルの実体削除は行わないため、呼び出し側で削除すること。
+  ///
+  /// 練習日の記録（継続カレンダー用）にも1件分を加算する。
   Future<List<GrowthRecord>> add(GrowthRecord record) async {
+    // 初回移行は「今回のレコードを追加する前」に行う（二重計上の防止）
+    await _ensurePracticeLogSeeded();
     await _dataSource.add(record);
+    await _practiceLogDataSource.addUpload(record.date, record.durationMin);
     return _enforceMaxCount();
+  }
+
+  /// 継続カレンダー用の練習日記録を全件取得する（順不同）。
+  /// 画像を削除しても記録は残る。
+  Future<List<PracticeDay>> getPracticeDays() async {
+    await _ensurePracticeLogSeeded();
+    return _practiceLogDataSource.getAll();
+  }
+
+  /// 練習日記録の導入前から存在する成長記録を、練習日記録へ一度だけ
+  /// 移行する。
+  ///
+  /// ⚠ 移行できるのは「現時点で GrowthRecord が残っている日」のみ。
+  ///   導入前に画像を削除済みの日は記録が残っていないため復元できない。
+  Future<void> _ensurePracticeLogSeeded() async {
+    if (await _metaDataSource.hasSeededPracticeLog()) return;
+    final existing = PracticeDay.fromRecords(await _dataSource.getAll());
+    for (final day in existing) {
+      await _practiceLogDataSource.putIfAbsent(
+        day.date,
+        uploadCount: day.uploadCount,
+        totalMinutes: day.totalMinutes,
+      );
+    }
+    await _metaDataSource.markPracticeLogSeeded();
   }
 
   /// 1件削除

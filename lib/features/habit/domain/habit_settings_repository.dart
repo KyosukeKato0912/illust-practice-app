@@ -30,12 +30,12 @@ class HabitSettingsRepository {
   static const int defaultCustomBreakMinutes = 5;
 
   // ── 作業開始促進通知のデフォルト値 ────────────────────
-  static const bool defaultReminderEnabled = true;
+  static const bool defaultReminderEnabled = false;
   static const int  defaultReminderHour    = 12;
   static const int  defaultReminderMinute  = 0;
 
   // ── 復帰促進通知のデフォルト値 ────────────────────────
-  static const bool defaultComebackEnabled = true;
+  static const bool defaultComebackEnabled = false;
   static const HabitComebackPeriod defaultComebackPeriod =
       HabitComebackPeriod.oneWeek;
 

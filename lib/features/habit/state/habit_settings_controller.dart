@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../../../core/services/notification_service.dart';
 import '../domain/habit_settings.dart';
 import '../domain/habit_settings_repository.dart';
@@ -47,7 +48,9 @@ class HabitSettingsController {
   /// 保存済み設定を読み込む
   static Future<HabitSettings?> load() => HabitSettingsRepository.load();
 
-  /// 設定を保存し、通知スケジュールも合わせて更新する
+  /// 設定を保存し、通知スケジュールも合わせて更新する。
+  /// [lastPracticeDate] は復帰促進通知の起点（継続カレンダーの最終記録日。
+  /// 記録なしは null）。
   static Future<void> save({
     required bool isPreset,
     required int timerMinutes,
@@ -57,6 +60,7 @@ class HabitSettingsController {
     required int reminderMinute,
     required bool comebackEnabled,
     required HabitComebackPeriod comebackPeriod,
+    DateTime? lastPracticeDate,
   }) async {
     await HabitSettingsRepository.save(
       isPreset: isPreset,
@@ -73,19 +77,49 @@ class HabitSettingsController {
       reminderHour: reminderHour,
       reminderMinute: reminderMinute,
       comebackEnabled: comebackEnabled,
+      comebackPeriod: comebackPeriod,
+      lastPracticeDate: lastPracticeDate,
     );
   }
 
   /// 設定をクリアし（デフォルトに戻す）、通知スケジュールもデフォルトで更新する
-  static Future<void> clear() async {
+  static Future<void> clear({DateTime? lastPracticeDate}) async {
     await HabitSettingsRepository.clear();
     await _syncNotifications(
       reminderEnabled: defaultReminderEnabled,
       reminderHour: defaultReminderHour,
       reminderMinute: defaultReminderMinute,
       comebackEnabled: defaultComebackEnabled,
+      comebackPeriod: defaultComebackPeriod,
+      lastPracticeDate: lastPracticeDate,
     );
   }
+
+  /// 保存済み設定（未保存ならデフォルト）で復帰促進通知を更新する。
+  /// 最終練習日の変化時に habitComebackSyncProvider から呼ばれる。
+  static Future<void> syncComebackWithSavedSettings(
+      DateTime? lastPracticeDate) async {
+    try {
+      final saved = await load();
+      await _syncComeback(
+        enabled: saved?.comebackEnabled ?? defaultComebackEnabled,
+        period: saved?.comebackPeriod ?? defaultComebackPeriod,
+        lastPracticeDate: lastPracticeDate,
+      );
+    } catch (e) {
+      debugPrint('[HabitSettingsController] comeback sync failed: $e');
+    }
+  }
+
+  // ── 正確なアラーム権限（ui/ から NotificationService を直接触らせない窓口）──
+  /// 正確なアラーム（時刻ちょうどの通知）が許可されているか
+  static Future<bool> isExactAlarmPermissionGranted() =>
+      NotificationService.canScheduleExactAlarms();
+
+  /// 設定画面（アラームとリマインダー）を開いて許可を求める。
+  /// 戻ったあとの許可状態を返す。
+  static Future<bool> requestExactAlarmPermission() =>
+      NotificationService.requestExactAlarmPermission();
 
   // ── 通知スケジュールの同期 ────────────────────────────
   static Future<void> _syncNotifications({
@@ -93,6 +127,8 @@ class HabitSettingsController {
     required int reminderHour,
     required int reminderMinute,
     required bool comebackEnabled,
+    required HabitComebackPeriod comebackPeriod,
+    DateTime? lastPracticeDate,
   }) async {
     // 作業開始促進通知スケジュールを更新
     if (reminderEnabled) {
@@ -102,10 +138,28 @@ class HabitSettingsController {
       await NotificationService.cancelReminder();
     }
     // 復帰促進通知スケジュールを更新
-    // カレンダーデータ永続化実装後は最終練習日を渡す形に差し替え。
-    // 現時点では通知ON/OFFのみ反映（スケジュール自体はカレンダー記録時に登録される）。
-    if (!comebackEnabled) {
+    await _syncComeback(
+      enabled: comebackEnabled,
+      period: comebackPeriod,
+      lastPracticeDate: lastPracticeDate,
+    );
+  }
+
+  // ── 復帰促進通知の同期 ────────────────────────────────
+  // ON かつ最終練習日がある場合のみ「最終練習日＋空白期間」で登録し、
+  // OFF または記録なしの場合は解除する。
+  static Future<void> _syncComeback({
+    required bool enabled,
+    required HabitComebackPeriod period,
+    required DateTime? lastPracticeDate,
+  }) async {
+    if (!enabled || lastPracticeDate == null) {
       await NotificationService.cancelComeback();
+      return;
     }
+    await NotificationService.scheduleComebackIfNeeded(
+      lastPracticeDate: lastPracticeDate,
+      thresholdDays: period.days,
+    );
   }
 }

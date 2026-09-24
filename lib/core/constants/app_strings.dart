@@ -173,6 +173,33 @@ abstract class AppStrings {
   static const String habitSettingsResetMessage = 'すべての設定をデフォルト値に戻します。よろしいですか？';
   static const String habitSettingsReset        = '設定を初期値に戻しました';
 
+  // ── 習慣化サポート：正確なアラーム権限の案内ダイアログ ──
+  static const String habitExactAlarmDialogTitle = 'アラーム権限が必要です';
+  static const String habitExactAlarmDialogMessage =
+      '設定した時刻ちょうどに作業開始通知を届けるため、'
+      '「アラームとリマインダー」の権限を有効にしてください。\n\n'
+      '「設定を開く」を押したあと、一覧からこのアプリを選んで'
+      'スイッチをONにしてください。\n\n'
+      '許可しない場合も通知は設定できますが、通知時刻が数分ずれることがあります。';
+  static const String habitExactAlarmDialogOpenSettings = '設定を開く';
+
+  // ── 通知（NotificationService）──────────────────────
+  // チャンネル名・説明は Android の通知設定画面でユーザーに表示される。
+  // チャンネルID・通知IDは識別子のため NotificationService 側で管理する。
+  static const String notificationTimerChannelName = 'メリハリタイマー';
+  static const String notificationTimerChannelDesc = 'メリハリタイマーのフェーズ切替通知';
+  static const String notificationReminderChannelName = '作業開始促進';
+  static const String notificationReminderChannelDesc = '毎日の作業開始を促す通知';
+
+  static const String notificationWorkFinishedTitle = '作業終了 — 休憩を始めましょう';
+  static const String notificationWorkFinishedMessage = '設定時間が経過しました。少し休憩しましょう！';
+  static const String notificationBreakFinishedTitle = '休憩終了 — 作業を再開しましょう';
+  static const String notificationBreakFinishedMessage = '休憩時間が終わりました。また頑張りましょう！';
+  static const String notificationReminderTitle = '今日も練習しましょう！';
+  static const String notificationReminderMessage = 'イラスト練習の時間です。少しずつ続けることが上達への近道です🎨';
+  static const String notificationComebackTitle = 'しばらく練習が空いていますよ！';
+  static const String notificationComebackMessage = 'また少しずつ練習を再開しませんか？あなたのペースで大丈夫です🎨';
+
   // メリハリタイマー フェーズラベル
   static const String habitPhaseWork  = '作業中';
   static const String habitPhaseBreak = '休憩中';
@@ -316,6 +343,7 @@ abstract class AppStrings {
 
   // ── 共通ダイアログ ──────────────────────────────────────
   static const String dialogCancel = 'キャンセル';
+  static const String dialogDecide = '決定';
   static const String dialogReset = 'リセット';
 
   // ── Webサンプル版：フィードバックリンク ─────────────────

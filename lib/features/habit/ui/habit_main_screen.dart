@@ -8,9 +8,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../shared/components/app_bar_widget.dart';
 import '../../../shared/components/banner_ad_widget.dart';
-import '../../growth/domain/growth_record.dart';
-import '../../growth/state/growth_provider.dart';
-import '../../../shared/testdata/growth_testdata.dart';
+import '../../growth/domain/practice_day.dart';
+import '../state/habit_practice_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // 習慣化サポート メイン画面
@@ -24,13 +23,14 @@ import '../../../shared/testdata/growth_testdata.dart';
 // 余白・パディング・カラーは AppValues / AppColors の共通定数を使用。
 //
 // ⚠ 専用のHabitRecordモデルは持たない。
-//   データは成長記録（GrowthRecord・growthProvider）を参照する。
+//   データは成長記録のアップロード時に作られる練習日の記録
+//   （PracticeDay・habitPracticeDaysProvider）を参照する。
 //   成長記録で画像を登録（ファイル・写真いずれか）したタイミングに
-//   のみデータが作られる。習慣化サポート・成長記録どちらの
-//   継続カレンダーも同じデータを参照する（メリハリタイマー自体は
-//   記録を作らない）。
-//   作業時間の吹き出しには GrowthRecord.durationMin（アップロード時に
-//   任意入力された所要時間）を使用する。
+//   のみデータが作られ、画像を削除しても記録は残り続ける。
+//   習慣化サポート・成長記録どちらの継続カレンダーも同じ記録を
+//   参照する（メリハリタイマー自体は記録を作らない）。
+//   作業時間の吹き出しには、アップロード時に任意入力された所要時間の
+//   その日の合計（PracticeDay.totalMinutes）を使用する。
 // ══════════════════════════════════════════════════════════
 class HabitMainScreen extends ConsumerStatefulWidget {
   const HabitMainScreen({super.key});
@@ -132,33 +132,33 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
     }
   }
 
-  // ── 実データ（成長記録）から表示週の日付ごとの作業時間合計を集計 ──
+  // ── 練習日の記録から表示週の日付ごとの作業時間合計を集計 ──
   // 戻り値：キー＝"yyyy-MM-dd"、値＝その日の作業時間合計(分)
   // データがない日はマップに含まれない（= 花丸なし）。
-  // GrowthRecord.durationMin はアップロード時の任意入力のため、
-  // 未入力（null）のレコードは0分として扱う。
+  // 所要時間はアップロード時の任意入力のため、未入力のアップロードは
+  // 0分として合計済み（PracticeDay.totalMinutes）。
   Map<String, int> _buildDailyTotals(
     List<DateTime> weekDays,
-    List<GrowthRecord> allRecords,
+    List<PracticeDay> allDays,
   ) {
     final weekSet = {
       for (final d in weekDays) AppDateUtils.dateKey(d),
     };
     final Map<String, int> totals = {};
-    for (final r in allRecords) {
-      final key = AppDateUtils.dateKey(r.date);
+    for (final day in allDays) {
+      final key = AppDateUtils.dateKey(day.date);
       if (weekSet.contains(key)) {
-        totals[key] = (totals[key] ?? 0) + (r.durationMin ?? 0);
+        totals[key] = (totals[key] ?? 0) + day.totalMinutes;
       }
     }
     return totals;
   }
 
-  // ── 実データ（成長記録）全体から「記録のある日付」の集合を作成 ──
+  // ── 練習日の記録全体から「記録のある日付」の集合を作成 ──
   // 連続日数の判定には表示週外のデータも必要なため、
   // 表示週で絞り込む前の全期間データから集合を作る。
-  Set<String> _buildRecordedDateKeys(List<GrowthRecord> allRecords) => {
-        for (final r in allRecords) AppDateUtils.dateKey(r.date),
+  Set<String> _buildRecordedDateKeys(List<PracticeDay> allDays) => {
+        for (final day in allDays) AppDateUtils.dateKey(day.date),
       };
 
   // ── 指定日が属する連続記録区間の「総日数」を計算する ────
@@ -212,17 +212,14 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // HabitConfig.useTestData は GrowthConfig.useTestData と独立して
-    // 切替できる。true の間は growthProvider を経由せず、
-    // 共有テストデータ（shared/testdata/growth_testdata.dart）を直接使う。
-    // ダミー画像のコピーを含む非同期処理のため、初回読み込み中は
-    // 空リストとして扱う（AsyncValue.valueOrNull）。
-    final allRecords = HabitConfig.useTestData
-        ? ref.watch(growthTestDataProvider).valueOrNull ?? const []
-        : ref.watch(growthProvider);
+    // 継続カレンダーの元データ（HabitConfig.useTestData に応じて実データ／
+    // テストデータを切替）は habit_practice_provider.dart に集約している。
+    // 復帰促進通知の最終練習日と常に同じ元データを参照するため、
+    // ここでは直接分岐しない。
+    final allDays = ref.watch(habitPracticeDaysProvider);
     final weekDays = _weekDays;
-    final dailyTotals = _buildDailyTotals(weekDays, allRecords);
-    final recordedDateKeys = _buildRecordedDateKeys(allRecords);
+    final dailyTotals = _buildDailyTotals(weekDays, allDays);
+    final recordedDateKeys = _buildRecordedDateKeys(allDays);
 
     return Scaffold(
       appBar: AppBarWidget(
@@ -363,7 +360,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                     children: [
                       _DebugCountChip(
                         label: AppStrings.habitDebugDataCountLabel,
-                        value: '${allRecords.length}'
+                        value: '${allDays.fold<int>(0, (sum, d) => sum + d.uploadCount)}'
                             '${AppStrings.habitDebugDataCountSuffix}',
                       ),
                       const SizedBox(width: 12),

@@ -6,6 +6,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 
 // ══════════════════════════════════════════════════════════
 // 通知サービス
@@ -16,7 +17,11 @@ import '../constants/app_colors.dart';
 //
 // ■ 毎日スケジュール通知
 //   scheduleReminder(hour, minute) : 毎日指定時刻に作業開始を促す通知を登録
+//       正確なアラーム権限があれば時刻ちょうど（exact）、無ければ省電力に
+//       任せるモード（inexact・数分ずれることがある）で登録する
 //   cancelReminder()               : 作業開始促進通知を解除
+//   canScheduleExactAlarms()       : 正確なアラーム権限の有無を確認
+//   requestExactAlarmPermission()  : 設定画面（アラームとリマインダー）へ誘導
 //
 // ■ 復帰促進通知
 //   scheduleComebackIfNeeded(lastPracticeDate, thresholdDays)
@@ -31,13 +36,9 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   // ── 通知チャンネル ────────────────────────────────────
+  // チャンネルIDは識別子。ユーザーに見える名称・説明は AppStrings で管理する。
   static const _timerChannelId = 'habit_timer';
-  static const _timerChannelName = 'メリハリタイマー';
-  static const _timerChannelDesc = 'メリハリタイマーのフェーズ切替通知';
-
   static const _reminderChannelId = 'habit_reminder_v2';
-  static const _reminderChannelName = '作業開始促進';
-  static const _reminderChannelDesc = '毎日の作業開始を促す通知';
 
   // ── 通知ID ───────────────────────────────────────────
   static const _workFinishedId = 1001;
@@ -46,14 +47,7 @@ class NotificationService {
   static const _comebackId = 2002;
 
   // ── 通知テキスト ──────────────────────────────────────
-  static const _titleWorkFinished = '作業終了 — 休憩を始めましょう';
-  static const _messageWorkFinished = '設定時間が経過しました。少し休憩しましょう！';
-  static const _titleBreakFinished = '休憩終了 — 作業を再開しましょう';
-  static const _messageBreakFinished = '休憩時間が終わりました。また頑張りましょう！';
-  static const _titleReminder = '今日も練習しましょう！';
-  static const _messageReminder = 'イラスト練習の時間です。少しずつ続けることが上達への近道です🎨';
-  static const _titleComeback = 'しばらく練習が空いていますよ！';
-  static const _messageComeback = 'また少しずつ練習を再開しませんか？あなたのペースで大丈夫です🎨';
+  // タイトル・本文は AppStrings（notification〜）で管理する。
 
   // ── 初期化 ────────────────────────────────────────────
   static Future<void> initialize() async {
@@ -106,30 +100,13 @@ class NotificationService {
     debugPrint(
         '[NotificationService] notifications permission granted: $granted');
 
-    // exact alarm許可の"現在の状態"を毎回確認・ログ出力する。
-    // 一度許可しても、端末側の設定変更やOSアップデートで
-    // 取り消されるケースがあるため、起動のたびに確認する。
-    final exactAlarmsGranted =
-        await androidPlugin?.requestExactAlarmsPermission();
-    debugPrint(
-        '[NotificationService] exact alarms permission granted: $exactAlarmsGranted');
-    try {
-      final canScheduleExact =
-          await androidPlugin?.canScheduleExactNotifications();
-      debugPrint(
-          '[NotificationService] canScheduleExactNotifications: $canScheduleExact');
-    } catch (e) {
-      debugPrint(
-          '[NotificationService] canScheduleExactNotifications check failed: $e');
-    }
-
     // ⬇️ 【ここから追記】OSに対して通知チャンネルを強制的に直接登録する処理
     try {
       if (androidPlugin != null) {
         const androidChannel = AndroidNotificationChannel(
           'habit_reminder_v2', // コード内で指定しているチャンネルIDと完全に一致させる
-          '作業開始促進',
-          description: '毎日の作業開始を促す通知',
+          AppStrings.notificationReminderChannelName,
+          description: AppStrings.notificationReminderChannelDesc,
           importance: Importance.high, // 必ずHIGH（ポップアップ表示）を指定
           playSound: true,
         );
@@ -170,17 +147,17 @@ class NotificationService {
     if (kIsWeb) {
       _showWebBanner(
           icon: Icons.coffee_outlined,
-          title: _titleWorkFinished,
-          message: _messageWorkFinished);
+          title: AppStrings.notificationWorkFinishedTitle,
+          message: AppStrings.notificationWorkFinishedMessage);
       return;
     }
     await _showNativeNow(
         id: _workFinishedId,
         channelId: _timerChannelId,
-        channelName: _timerChannelName,
-        channelDesc: _timerChannelDesc,
-        title: _titleWorkFinished,
-        message: _messageWorkFinished);
+        channelName: AppStrings.notificationTimerChannelName,
+        channelDesc: AppStrings.notificationTimerChannelDesc,
+        title: AppStrings.notificationWorkFinishedTitle,
+        message: AppStrings.notificationWorkFinishedMessage);
   }
 
   // ── 休憩終了（→ 作業開始）通知 ────────────────────────
@@ -189,17 +166,50 @@ class NotificationService {
     if (kIsWeb) {
       _showWebBanner(
           icon: Icons.play_circle_outline,
-          title: _titleBreakFinished,
-          message: _messageBreakFinished);
+          title: AppStrings.notificationBreakFinishedTitle,
+          message: AppStrings.notificationBreakFinishedMessage);
       return;
     }
     await _showNativeNow(
         id: _breakFinishedId,
         channelId: _timerChannelId,
-        channelName: _timerChannelName,
-        channelDesc: _timerChannelDesc,
-        title: _titleBreakFinished,
-        message: _messageBreakFinished);
+        channelName: AppStrings.notificationTimerChannelName,
+        channelDesc: AppStrings.notificationTimerChannelDesc,
+        title: AppStrings.notificationBreakFinishedTitle,
+        message: AppStrings.notificationBreakFinishedMessage);
+  }
+
+  // ── 正確なアラーム権限 ────────────────────────────────
+  // Android 12+ では「アラームとリマインダー」の許可が必要で、
+  // 特に Android 14+ の新規インストールでは既定でOFF。
+  // Web・Android以外は確認不要のため true を返す。
+  static Future<bool> canScheduleExactAlarms() async {
+    if (kIsWeb) return true;
+    try {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin == null) return true;
+      return await androidPlugin.canScheduleExactNotifications() ?? false;
+    } catch (e) {
+      debugPrint('[NotificationService] canScheduleExactAlarms failed: $e');
+      return false;
+    }
+  }
+
+  /// システムの設定画面（アラームとリマインダー）を開いて許可を求める。
+  /// 設定画面から戻ったあとの許可状態を返す。
+  static Future<bool> requestExactAlarmPermission() async {
+    if (kIsWeb) return true;
+    try {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin == null) return true;
+      return await androidPlugin.requestExactAlarmsPermission() ?? false;
+    } catch (e) {
+      debugPrint(
+          '[NotificationService] requestExactAlarmPermission failed: $e');
+      return false;
+    }
   }
 
   // ── 作業開始促進：毎日スケジュール登録 ────────────────
@@ -224,33 +234,17 @@ class NotificationService {
       minute,
     );
 
-    // OSの直近ブロックを回避するため、安全に20分以上余裕を持たせた未来の日時を計算します
-    if (scheduled.isBefore(now.add(const Duration(minutes: 20)))) {
+    // 指定時刻が既に過ぎていれば、翌日の同時刻から開始する
+    if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     debugPrint(
         '[NotificationService] now=$now scheduled=$scheduled (tz.local=${tz.local.name})');
 
-    // 完璧な誤差吸収型セーフティ（前後60秒以内の指定なら即時通知）
-    final diffInSeconds = scheduled.difference(now).inSeconds.abs();
-    if (diffInSeconds <= 60) {
-      debugPrint(
-          '[NotificationService] 1-min test detected ($diffInSeconds seconds diff). Triggering immediate fallback.');
-      await _showNativeNow(
-        id: _reminderId,
-        channelId: _reminderChannelId,
-        channelName: _reminderChannelName,
-        channelDesc: _reminderChannelDesc,
-        title: _titleReminder,
-        message: _messageReminder,
-      );
-      return;
-    }
-
     const androidDetails = AndroidNotificationDetails(
       _reminderChannelId,
-      _reminderChannelName,
-      channelDescription: _reminderChannelDesc,
+      AppStrings.notificationReminderChannelName,
+      channelDescription: AppStrings.notificationReminderChannelDesc,
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
@@ -266,20 +260,27 @@ class NotificationService {
       macOS: darwinDetails,
     );
 
+    // 権限があれば時刻ちょうど、無ければ inexact で登録する。
+    // 権限が無いまま exact を指定すると例外になるため、必ず事前に確認する。
+    final canExact = await canScheduleExactAlarms();
+    final scheduleMode = canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
     try {
       await _plugin.zonedSchedule(
         _reminderId,
-        _titleReminder,
-        _messageReminder,
+        AppStrings.notificationReminderTitle,
+        AppStrings.notificationReminderMessage,
         scheduled,
         details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
       debugPrint(
-          '[NotificationService] zonedSchedule (inexact) succeeded for id=$_reminderId at $scheduled');
+          '[NotificationService] zonedSchedule ($scheduleMode) succeeded for id=$_reminderId at $scheduled');
     } catch (e) {
       debugPrint('[NotificationService] zonedSchedule FAILED: $e');
     }
@@ -330,8 +331,8 @@ class NotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       _reminderChannelId,
-      _reminderChannelName,
-      channelDescription: _reminderChannelDesc,
+      AppStrings.notificationReminderChannelName,
+      channelDescription: AppStrings.notificationReminderChannelDesc,
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
@@ -350,8 +351,8 @@ class NotificationService {
     try {
       await _plugin.zonedSchedule(
         _comebackId,
-        _titleComeback,
-        _messageComeback,
+        AppStrings.notificationComebackTitle,
+        AppStrings.notificationComebackMessage,
         scheduled,
         details,
         // 省電力・アプリ凍結環境でも動作し、ストア審査も安全なモードを指定

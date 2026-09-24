@@ -13,11 +13,14 @@ import 'package:hive/hive.dart';
 //     削除によって件数が上限を下回り、その後再度上限に達しても
 //     このフラグは一度trueになった後は変化しない
 //     （＝特別メッセージは二度と出さない）。
+//   ・継続カレンダー用の練習日記録（GrowthPracticeLogDataSource）へ、
+//     既存の成長記録から初回移行を済ませたかどうかのフラグ。
 // ══════════════════════════════════════════════════════════
 class GrowthMetaDataSource {
   static const String boxName = 'growth_meta';
   static const String _keyHasReachedMaxCountOnce =
       'has_reached_max_count_once';
+  static const String _keyPracticeLogSeeded = 'practice_log_seeded';
 
   Future<Box> _openBox() async {
     if (Hive.isBoxOpen(boxName)) {
@@ -43,5 +46,17 @@ class GrowthMetaDataSource {
   Future<void> resetHasReachedMaxCountOnce() async {
     final box = await _openBox();
     await box.delete(_keyHasReachedMaxCountOnce);
+  }
+
+  /// 練習日記録への初回移行が済んでいるか
+  Future<bool> hasSeededPracticeLog() async {
+    final box = await _openBox();
+    return (box.get(_keyPracticeLogSeeded) as bool?) ?? false;
+  }
+
+  /// 練習日記録への初回移行が済んだことを記録する
+  Future<void> markPracticeLogSeeded() async {
+    final box = await _openBox();
+    await box.put(_keyPracticeLogSeeded, true);
   }
 }

@@ -85,6 +85,10 @@ abstract class AppValues {
   /// 設定：メリハリタイマー 休憩時間の上限（分）
   static const int habitBreakMaxMinutes = 60;
 
+  /// 設定：作業開始促進通知の時刻を選べる分の刻み（分）。
+  /// 60の約数であること。実機検証で短い間隔を試したいときは 1 にする。
+  static const int habitReminderMinuteInterval = 30;
+
   /// 継続カレンダー：連続記録が濃い黄色になる日数のしきい値
   static const int habitStreakDarkThresholdDays = 21;
 

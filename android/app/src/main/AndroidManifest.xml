@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- 習慣化サポート：指定時刻ピッタリの通知に必要（Android 12+） -->
+    <!-- 広告（AdMob）・Googleフォント取得などの通信に必要（releaseビルドではmain側の宣言が必須） -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 習慣化サポート：Android 13+ で通知を表示するために必要 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 習慣化サポート：作業開始促進通知を指定時刻ちょうどに届けるために必要（Android 12+。
+         許可は設定画面「アラームとリマインダー」でユーザーがONにする） -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- 端末再起動後もスケジュール済み通知を復元するために必要 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -36,20 +41,20 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-            <meta-data
-                android:name="com.google.android.gms.ads.APPLICATION_ID"
-                android:value="ca-app-pub-3940256099942544~3347511713"/>
-                <!-- スケジュール通知の本体（AlarmManagerから直接呼ばれる。intent-filter不要） -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+        <!-- スケジュール通知の本体（AlarmManagerから直接呼ばれる。intent-filter不要） -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-          android:exported="false" />
-                <!-- 端末再起動時に通知スケジュールを自動再登録するレシーバー -->
+            android:exported="false" />
+        <!-- 端末再起動時に通知スケジュールを自動再登録するレシーバー -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-          android:exported="true">
+            android:exported="true">
             <intent-filter>
-                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-                 <action android:name="android.quickboot.POWERON"/>
-                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.quickboot.POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
     </application>
