@@ -1,4 +1,4 @@
-name: slideshow
+name: illustpracticeapp
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -52,6 +52,7 @@ dependencies:
   printing: ^5.15.0  # 成長記録：生成したPDFの共有・保存（Google Fontsによる日本語フォント取得にも使用）
   share_plus: ^12.0.2  # 成長記録：選択画像のSNS（X等）共有
   file_picker: ^8.0.0
+  flutter_timezone: ^5.0.1
 
 dev_dependencies:
   flutter_test:

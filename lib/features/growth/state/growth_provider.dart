@@ -196,12 +196,17 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
     return successCount;
   }
 
-  /// 【検証用】保持上限到達フラグをリセットする。
-  /// GrowthConfig.showDebugResetMaxCountReachedButton が true の間のみ、
+  /// 【検証用】保持上限到達フラグをON/OFF切り替える。
+  /// GrowthConfig.showDebugMaxCountReachedToggleButton が true の間のみ、
   /// UI（成長記録メイン画面）から呼び出される想定。
-  Future<void> resetMaxCountReachedFlag() async {
-    await _repository.resetMaxCountReachedFlag();
-    _ref.read(growthMaxCountReachedProvider.notifier).reset();
+  Future<void> toggleMaxCountReachedFlagForDebug() async {
+    final next = !_ref.read(growthMaxCountReachedProvider);
+    await _repository.setMaxCountReachedFlagForDebug(next);
+    if (next) {
+      _ref.read(growthMaxCountReachedProvider.notifier).markReached();
+    } else {
+      _ref.read(growthMaxCountReachedProvider.notifier).reset();
+    }
   }
 }
 

@@ -194,9 +194,9 @@ abstract class AppStrings {
 
   // ── 成長記録 ────────────────────────────────────────────
   static const String growthTitle = '成長記録';
-  static const String growthUploadButton = 'イラストを追加';
-  static const String growthSnsButton = 'SNSに投稿';
-  static const String growthDownloadButton = 'イラストを保存';
+  static const String growthUploadButton = 'ADD';
+  static const String growthSnsButton = 'SNS';
+  static const String growthDownloadButton = 'DL';
 
   /// アップロード機能が未実装の間、アップロードボタン押下時に表示する案内
   static const String growthUploadComingSoon = 'アップロード機能は準備中です';
@@ -236,7 +236,7 @@ abstract class AppStrings {
   static const String growthEmptyFiltered = '条件に一致する画像が見つかりません';
 
   // ── 成長記録：PDF書き出し ──────────────────────────────
-  static const String growthPdfButton = 'PDFでダウンロード';
+  static const String growthPdfButton = 'PDF';
 
   /// PDF書き出し対象が0件（絞込結果を含む）の場合のSnackBar文言
   static const String growthPdfEmptyError = '書き出せる画像がありません';
@@ -269,13 +269,22 @@ abstract class AppStrings {
   /// 押された場合に表示するエラー
   static const String growthDurationInvalidError = '所要時間は半角数字で入力してください';
 
-  /// 【検証用】成長記録メイン画面の上限到達フラグリセットボタンのラベル
-  static const String growthDebugResetMaxCountButtonLabel =
-      '上限到達フラグをリセット(検証用)';
+  /// 【検証用】成長記録メイン画面の上限到達フラグ切り替えボタンのラベル
+  /// （現在OFF→ONにする場合）
+  static const String growthDebugMaxCountFlagOnButtonLabel =
+      '上限到達フラグをONにする(検証用)';
 
-  /// 【検証用】上限到達フラグリセット完了時に表示するメッセージ
-  static const String growthDebugResetMaxCountDoneMessage =
-      '上限到達フラグをリセットしました';
+  /// 【検証用】同上（現在ON→OFFにする場合）
+  static const String growthDebugMaxCountFlagOffButtonLabel =
+      '上限到達フラグをOFFにする(検証用)';
+
+  /// 【検証用】上限到達フラグをONにした直後に表示するメッセージ
+  static const String growthDebugMaxCountFlagOnDoneMessage =
+      '上限到達フラグをONにしました';
+
+  /// 【検証用】上限到達フラグをOFFにした直後に表示するメッセージ
+  static const String growthDebugMaxCountFlagOffDoneMessage =
+      '上限到達フラグをOFFにしました';
 
   // ── 成長記録：アップロード完了画面 ──────────────────────
   static const String growthUploadCompleteTitle = 'アップロードが完了しました';

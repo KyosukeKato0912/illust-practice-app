@@ -6,8 +6,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.slideshow"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.example.illustpracticeapp"
+    
+    // 【修正】プラグインの要求に合わせてビルド時のみ36に引き上げます
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -21,12 +23,12 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.slideshow"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.example.illustpracticeapp"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        
+        // 【最重要】アプリの実行挙動（通知制限など）はAndroid 15（35）として安全に動作させます
+        targetSdk = 35
+        
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

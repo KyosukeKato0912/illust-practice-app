@@ -168,15 +168,20 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
     Navigator.push(context, AppRouter.growthUpload());
   }
 
-  /// 【検証用】保持上限到達フラグをリセットする。
-  /// GrowthConfig.showDebugResetMaxCountReachedButton が false の場合、
+  /// 【検証用】保持上限到達フラグをON/OFF切り替える。
+  /// GrowthConfig.showDebugMaxCountReachedToggleButton が false の場合、
   /// このボタン自体が表示されないため呼ばれない。
-  Future<void> _onDebugResetMaxCountFlagTap(BuildContext context) async {
-    await ref.read(growthProvider.notifier).resetMaxCountReachedFlag();
+  Future<void> _onDebugToggleMaxCountFlagTap(BuildContext context) async {
+    await ref.read(growthProvider.notifier).toggleMaxCountReachedFlagForDebug();
     if (!context.mounted) return;
+    final nowReached = ref.read(growthMaxCountReachedProvider);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(AppStrings.growthDebugResetMaxCountDoneMessage),
+      SnackBar(
+        content: Text(
+          nowReached
+              ? AppStrings.growthDebugMaxCountFlagOnDoneMessage
+              : AppStrings.growthDebugMaxCountFlagOffDoneMessage,
+        ),
       ),
     );
   }
@@ -482,16 +487,21 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                    if (GrowthConfig.showDebugResetMaxCountReachedButton) ...[
+                    if (GrowthConfig.showDebugMaxCountReachedToggleButton) ...[
                       TextButton(
-                        onPressed: () => _onDebugResetMaxCountFlagTap(context),
+                        onPressed: () =>
+                            _onDebugToggleMaxCountFlagTap(context),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: Text(
-                          AppStrings.growthDebugResetMaxCountButtonLabel,
+                          hasReachedMaxCount
+                              ? AppStrings
+                                  .growthDebugMaxCountFlagOffButtonLabel
+                              : AppStrings
+                                  .growthDebugMaxCountFlagOnButtonLabel,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,

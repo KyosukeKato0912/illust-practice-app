@@ -87,5 +87,5 @@ abstract class HabitConfig {
   /// テストデータで継続カレンダーの配色を確認する、といった使い方を
   /// 想定）。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool useTestData = false;
+  static const bool useTestData = true;
 }

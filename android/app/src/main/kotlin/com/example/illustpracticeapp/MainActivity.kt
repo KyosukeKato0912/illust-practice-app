@@ -1,4 +1,4 @@
-package com.example.slideshow
+package com.example.illustpracticeapp
 
 import io.flutter.embedding.android.FlutterActivity
 

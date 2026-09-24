@@ -11,14 +11,14 @@ abstract class GrowthConfig {
   /// ※ 現在は検証用に10件。将来の正式リリース時に300へ変更予定。
   static const int maxRecordCount = 10;
 
-  /// 検証用：成長記録メイン画面に「上限到達フラグリセット」ボタンを
+  /// 検証用：成長記録メイン画面に「上限到達フラグON/OFF切り替え」ボタンを
   /// 表示するかどうか。
   ///
   /// 上限到達の特別メッセージ（アップロード完了画面）は生涯で一度しか
-  /// 出ない仕組みのため、検証時に何度も再現できるようこのボタンで
-  /// フラグをリセットできるようにしている。
+  /// 出ない仕組みのため、検証時に何度でも再現・巻き戻しできるよう
+  /// このボタンでフラグをON/OFFできるようにしている。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool showDebugResetMaxCountReachedButton = true;
+  static const bool showDebugMaxCountReachedToggleButton = true;
 
   /// 検証用：成長記録の一覧を実データ（Hive）の代わりに
   /// shared/testdata/growth_testdata.dart のテストデータで表示するか
@@ -29,5 +29,5 @@ abstract class GrowthConfig {
   /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData で
   /// 独立して管理しており、本フラグとは連動しない。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool useTestData = false;
+  static const bool useTestData = true;
 }

@@ -12,8 +12,21 @@ import 'core/services/hive_adapters.dart';
 // ══════════════════════════════════════════════════════════
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  HiveAdapters.registerAll();
-  await NotificationService.initialize();
+
+  // ① 通知を最優先で安全に起動（エラーが起きてもHiveを巻き込まない）
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint('[main] Notification init failed: $e');
+  }
+
+  // ② データベースを安全に起動（裏でこれがコケても、通知のループを巻き込まない）
+  try {
+    await Hive.initFlutter();
+    HiveAdapters.registerAll();
+  } catch (e) {
+    debugPrint('[main] Hive init failed: $e');
+  }
+
   runApp(const ProviderScope(child: App()));
 }

@@ -107,9 +107,13 @@ class GrowthRepository {
     return _metaDataSource.hasReachedMaxCountOnce();
   }
 
-  /// 【検証用】保持上限到達フラグをリセットする。
-  Future<void> resetMaxCountReachedFlag() async {
-    await _metaDataSource.resetHasReachedMaxCountOnce();
+  /// 【検証用】保持上限到達フラグをON/OFF切り替える。
+  Future<void> setMaxCountReachedFlagForDebug(bool reached) async {
+    if (reached) {
+      await _metaDataSource.markReachedMaxCountOnce();
+    } else {
+      await _metaDataSource.resetHasReachedMaxCountOnce();
+    }
   }
 
   Future<List<GrowthRecord>> _enforceMaxCount() async {
