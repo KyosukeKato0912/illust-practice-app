@@ -281,18 +281,30 @@ abstract class AppStrings {
   /// PDFファイル名の先頭（例：'成長記録_2026-06-01.pdf'）
   static const String growthPdfFileNamePrefix = '成長記録_';
 
-  // ── 成長記録：アップロード画面 ──────────────────────────
-  static const String growthUploadScreenTitle = 'アップロード';
+  // ── 成長記録：イラストを追加画面 ────────────────────────
+  static const String growthUploadScreenTitle = 'イラストを追加';
   static const String growthDurationInputLabel = '所要時間（任意）';
   static const String growthDurationInputUnit = '分';
   static const String growthCameraUploadButton = 'カメラで追加';
   static const String growthFileUploadButton = 'ファイルで追加';
 
+  /// プレビューエリア：画像未選択時のプレースホルダー文言
+  static const String growthPreviewPlaceholder = '画像が選択されていません';
+
+  /// 確定ボタンのラベル
+  static const String growthConfirmButton = '確定';
+
   /// カメラの起動・撮影に失敗した場合のSnackBar文言
   /// （権限が許可されていない場合や、端末側のエラーを含む）
   static const String growthCameraError = 'カメラを起動できませんでした';
 
-  /// 所要時間欄に半角数字以外が入力された状態でアップロードボタンが
+  /// ギャラリーからの画像選択に失敗した場合のSnackBar文言
+  static const String growthGalleryError = '画像を選択できませんでした';
+
+  /// 確定（保存）処理に失敗した場合のSnackBar文言
+  static const String growthConfirmError = '追加に失敗しました';
+
+  /// 所要時間欄に半角数字以外が入力された状態で確定ボタンが
   /// 押された場合に表示するエラー
   static const String growthDurationInvalidError = '所要時間は半角数字で入力してください';
 

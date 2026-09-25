@@ -59,6 +59,11 @@ final growthMaxCountReachedProvider =
 //   ・「写真で追加」（ギャラリー選択）・「カメラで追加」（撮影）の
 //     両方を実装。picker種別（ImageSource）が異なるだけで、
 //     保存処理（_saveRecord）は共通化している
+//   ・UploadScreen側でプレビュー表示を挟むため、「画像を選ぶ」
+//     （[pickImageFromGallery]／[pickImageFromCamera]）と
+//     「保存を確定する」（[confirmUpload]）を別メソッドに分離している。
+//     選択直後はHive・ファイルへの書き込みを一切行わず、[confirmUpload]
+//     が呼ばれて初めて実際の保存処理（_saveRecord）が走る。
 //   ・所要時間（分・任意入力）は uploadScreen 側でバリデーション済みの
 //     int?（durationMin）として受け取り、そのままファイル名・
 //     GrowthRecordに反映する
@@ -91,8 +96,23 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
         : await _repository.getAll();
   }
 
-  /// ギャラリー（写真）から画像を選択してアップロードする。
+  /// ギャラリーから画像を選択する（保存は行わない）。
+  /// 呼び出し側（UploadScreen）がプレビュー表示用に結果を保持し、
+  /// 「確定」タップ時に [confirmUpload] へそのまま渡す。
   /// 選択がキャンセルされた場合は null を返す。
+  Future<XFile?> pickImageFromGallery() {
+    return _picker.pickImage(source: ImageSource.gallery);
+  }
+
+  /// カメラを起動して撮影する（保存は行わない）。
+  /// 撮影がキャンセルされた場合は null を返す。
+  /// 意味は [pickImageFromGallery] と同じ。
+  Future<XFile?> pickImageFromCamera() {
+    return _picker.pickImage(source: ImageSource.camera);
+  }
+
+  /// プレビュー中の画像（[pickImageFromGallery]／[pickImageFromCamera] で
+  /// 取得したもの）を確定して保存する。
   /// [durationMin] は所要時間（分・任意）。呼び出し側でバリデーション
   /// 済みの値を渡すこと。
   ///
@@ -100,20 +120,7 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   /// （[GrowthConfig.maxRecordCount]）に「生涯で初めて」到達したかどうか。
   /// 一度到達した後は、削除して枚数が減り再度上限に達しても false になる
   /// （特別メッセージは初回到達時のみ表示するため）。
-  Future<bool?> uploadFromGallery({int? durationMin}) {
-    return _pickAndSave(ImageSource.gallery, durationMin: durationMin);
-  }
-
-  /// カメラを起動して撮影した画像をアップロードする。
-  /// 撮影がキャンセルされた場合は null を返す。
-  /// [durationMin]・戻り値の意味は [uploadFromGallery] と同じ。
-  Future<bool?> uploadFromCamera({int? durationMin}) {
-    return _pickAndSave(ImageSource.camera, durationMin: durationMin);
-  }
-
-  Future<bool?> _pickAndSave(ImageSource source, {int? durationMin}) async {
-    final picked = await _picker.pickImage(source: source);
-    if (picked == null) return null;
+  Future<bool> confirmUpload(XFile picked, {int? durationMin}) {
     return _saveRecord(picked, durationMin: durationMin);
   }
 
