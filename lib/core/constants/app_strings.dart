@@ -271,8 +271,17 @@ abstract class AppStrings {
   /// PDF生成に失敗した場合のSnackBar文言
   static const String growthPdfGenerateError = 'PDFの作成に失敗しました';
 
-  /// PDF内の各ページ上部に表示するヘッダー文言
+  /// PDF内の各ページ上部に表示するヘッダー文言（表紙ページを除く）
   static const String growthPdfHeaderTitle = 'あなたの成長記録';
+
+  /// PDF表紙に表示するキャッチコピー
+  static const String growthPdfCoverCatchCopy = '毎日3分、描けば進む';
+
+  /// PDF表紙に表示する総作業時間のラベル（例：'総作業時間：3時間20分'）
+  static const String growthPdfCoverTotalDurationPrefix = '総作業時間：';
+  static const String growthPdfCoverTotalDurationHourUnit = '時間';
+  static const String growthPdfCoverTotalDurationMinuteUnit = '分';
+  static const String growthPdfCoverTotalDurationNone = 'なし';
 
   /// PDF表紙に表示する対象枚数のサフィックス（例：'全12枚'）
   static const String growthPdfCoverCountPrefix = '全';

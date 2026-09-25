@@ -76,7 +76,7 @@ abstract class HabitConfig {
   /// 【検証用】継続カレンダーの下に、現在登録されている件数
   /// （データ総数・記録のある日数）を表示するかどうか。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool showDebugDataCount = true;
+  static const bool showDebugDataCount = false;
 
   /// 【検証用】習慣化サポートの継続カレンダーを、実データ
   /// （growthProvider）の代わりに shared/testdata/growth_testdata.dart
@@ -87,5 +87,5 @@ abstract class HabitConfig {
   /// テストデータで継続カレンダーの配色を確認する、といった使い方を
   /// 想定）。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool useTestData = true;
+  static const bool useTestData = false;
 }

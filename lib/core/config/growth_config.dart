@@ -29,5 +29,5 @@ abstract class GrowthConfig {
   /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData で
   /// 独立して管理しており、本フラグとは連動しない。
   /// ⚠ リリース時は必ず false にすること。
-  static const bool useTestData = true;
+  static const bool useTestData = false;
 }

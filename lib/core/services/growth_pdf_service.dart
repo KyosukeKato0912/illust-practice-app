@@ -15,12 +15,12 @@ import '../utils/date_utils.dart';
 // 成長記録の画像一覧をPDF化する。
 //
 // ページ構成：
-//   1ページ目 … 表紙（タイトル・対象期間・対象枚数）
+//   1ページ目 … 表紙（タイトル・キャッチコピー・対象期間・対象枚数）
 //   2ページ目以降 … サムネグリッド（3列×4行 = 12枚/ページ、
 //                   各サムネの上にファイル名を表示）
-// 全ページ共通：
-//   ヘッダー（上部）… growthPdfHeaderTitle固定文言
-//   フッター（下部）… ページ番号（表紙を含めた通し番号）
+// ヘッダー／フッター：
+//   ヘッダー（上部）… growthPdfHeaderTitle固定文言（表紙のみ非表示）
+//   フッター（下部）… ページ番号（表紙を含めた通し番号、全ページ共通）
 //
 // 日本語フォントは端末やビルド環境にフォントファイルを同梱する代わりに
 // printing パッケージの PdfGoogleFonts（Noto Sans JP）を実行時に取得して
@@ -77,6 +77,8 @@ abstract class GrowthPdfService {
         ? ''
         : '${AppDateUtils.formatYMD(sorted.first.date)} 〜 '
             '${AppDateUtils.formatYMD(sorted.last.date)}';
+    final totalDurationMin = sorted.fold<int>(
+        0, (sum, r) => sum + (r.durationMin ?? 0));
     final chunks = _chunk(sorted, _perPage);
 
     doc.addPage(
@@ -88,7 +90,7 @@ abstract class GrowthPdfService {
           _marginLeftRight,
           _marginBottom,
         ),
-        header: (context) => _buildHeader(),
+        header: (context) => _buildHeader(context),
         footer: (context) => _buildFooter(context),
         build: (context) => [
           pw.Container(
@@ -96,6 +98,7 @@ abstract class GrowthPdfService {
             child: _buildCover(
               periodLabel: periodLabel,
               count: sorted.length,
+              totalDurationMin: totalDurationMin,
             ),
           ),
           for (final chunk in chunks) ...[
@@ -134,15 +137,20 @@ abstract class GrowthPdfService {
     return result;
   }
 
-  // ── ヘッダー（全ページ共通） ─────────────────────────────
-  static pw.Widget _buildHeader() {
+  // ── ヘッダー（表紙を除く全ページ共通） ───────────────────
+  // 表紙（1ページ目）はタイトル・キャッチコピーを独自に表示するため、
+  // 上部ヘッダーの文言は表紙のみ非表示にする（高さは他ページと揃えたまま空にする）。
+  static pw.Widget _buildHeader(pw.Context context) {
+    final isCover = context.pageNumber == 1;
     return pw.Container(
       height: _headerHeight,
       alignment: pw.Alignment.center,
-      child: pw.Text(
-        AppStrings.growthPdfHeaderTitle,
-        style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-      ),
+      child: isCover
+          ? null
+          : pw.Text(
+              AppStrings.growthPdfHeaderTitle,
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            ),
     );
   }
 
@@ -162,7 +170,19 @@ abstract class GrowthPdfService {
   static pw.Widget _buildCover({
     required String periodLabel,
     required int count,
+    required int totalDurationMin,
   }) {
+    final hours = totalDurationMin ~/ 60;
+    final minutes = totalDurationMin % 60;
+    final durationText = totalDurationMin == 0
+        ? AppStrings.growthPdfCoverTotalDurationNone
+        : '$hours${AppStrings.growthPdfCoverTotalDurationHourUnit}'
+            '$minutes${AppStrings.growthPdfCoverTotalDurationMinuteUnit}';
+    final summaryLabel =
+        '${AppStrings.growthPdfCoverTotalDurationPrefix}$durationText'
+        '　${AppStrings.growthPdfCoverCountPrefix}$count'
+        '${AppStrings.growthPdfCoverCountSuffix}';
+
     return pw.Center(
       child: pw.Column(
         mainAxisAlignment: pw.MainAxisAlignment.center,
@@ -171,14 +191,18 @@ abstract class GrowthPdfService {
             AppStrings.growthPdfHeaderTitle,
             style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold),
           ),
+          pw.SizedBox(height: 12),
+          pw.Text(
+            AppStrings.growthPdfCoverCatchCopy,
+            style: const pw.TextStyle(fontSize: 20, color: PdfColors.grey700),
+          ),
           pw.SizedBox(height: 28),
           if (periodLabel.isNotEmpty) ...[
             pw.Text(periodLabel, style: const pw.TextStyle(fontSize: 16)),
             pw.SizedBox(height: 8),
           ],
           pw.Text(
-            '${AppStrings.growthPdfCoverCountPrefix}$count'
-            '${AppStrings.growthPdfCoverCountSuffix}',
+            summaryLabel,
             style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
           ),
         ],
@@ -229,7 +253,7 @@ abstract class GrowthPdfService {
       children: [
         pw.Text(
           fileName,
-          style: const pw.TextStyle(fontSize: 6),
+          style: const pw.TextStyle(fontSize: 12),
           maxLines: 1,
           overflow: pw.TextOverflow.clip,
           textAlign: pw.TextAlign.center,
