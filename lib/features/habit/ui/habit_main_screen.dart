@@ -15,11 +15,9 @@ import '../state/habit_practice_provider.dart';
 // 習慣化サポート メイン画面
 //
 // 継続カレンダー・メリハリタイマーボタン・設定ボタンを表示する。
-// 現フェーズ：縦3行 × 横7列のカレンダーグリッドを実装。
-//   1行目：曜日ラベル
-//   2行目：日付（表示週に応じて動的に更新）
-//   3行目：記録エリア（花丸・作業時間吹き出し）
-// 行高比は 1 : 1 : 3。
+// 継続カレンダーは成長記録のアップロード完了画面（_GrowthMonthCalendar）と
+// 同じデザイン（1行目：曜日ラベル、2行目：日付＋花丸を1セルにまとめた行）を
+// 週表示向けに踏襲している。
 // 余白・パディング・カラーは AppValues / AppColors の共通定数を使用。
 //
 // ⚠ 専用のHabitRecordモデルは持たない。
@@ -248,63 +246,24 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                   AppStrings.habitCalendarTitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
 
-                // ── 期間ラベル＋週切り替え＋今日に戻るボタン ──
-                // Stack で「中央：前週/日付/次週」と「右寄り：今日に戻る」
-                // を独立配置することで、今日に戻るボタンの表示有無に
-                // よって日付ラベルの位置がズレないようにする。
+                // ── 今日に戻るボタン（週切り替えの上段）──────────
+                // 週切り替え行と重ならないよう、別の段に置く。
+                // 今週を表示中はボタンを出さないが、段の高さは常に確保し、
+                // 下の週切り替え・カレンダーの位置がズレないようにする。
                 SizedBox(
-                  height: 36,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // ── 中央：前週ボタン／日付ラベル／次週ボタン ──
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _WeekNavButton(
-                            icon: Icons.chevron_left,
-                            onPressed: _goToPreviousWeek,
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: _pickWeek,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _dateRangeLabel,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.theme,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.theme,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.calendar_today,
-                                    size: 14, color: AppColors.theme),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _WeekNavButton(
-                            icon: Icons.chevron_right,
-                            onPressed: _goToNextWeek,
-                          ),
-                        ],
-                      ),
-                      // ── 右寄り：今日に戻るボタン（離れた位置に独立配置）──
-                      if (!_isCurrentWeek)
-                        Positioned(
-                          right: 0,
-                          child: GestureDetector(
+                  height: 28,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _isCurrentWeek
+                        ? null
+                        : GestureDetector(
                             onTap: _goToToday,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -333,7 +292,55 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                               ),
                             ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // ── 期間ラベル＋週切り替え ────────────────────
+                // 日付リンクは前週/次週ボタン（32px）と同等かやや大きめの
+                // 文字サイズにする。狭い画面ではみ出さないよう、
+                // ラベル部分のみ FittedBox で縮小する（ボタンは固定サイズ）。
+                SizedBox(
+                  height: 40,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _WeekNavButton(
+                        icon: Icons.chevron_left,
+                        onPressed: _goToPreviousWeek,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: _pickWeek,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _dateRangeLabel,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.theme,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.theme,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.calendar_today,
+                                    size: 22, color: AppColors.theme),
+                              ],
+                            ),
+                          ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      _WeekNavButton(
+                        icon: Icons.chevron_right,
+                        onPressed: _goToNextWeek,
+                      ),
                     ],
                   ),
                 ),
@@ -468,8 +475,10 @@ class _DebugCountChip extends StatelessWidget {
 // ══════════════════════════════════════════════════════════
 // 継続カレンダー
 //
-// 縦3行 × 横7列のグリッド。
-// 行高比：曜日 : 日付 : 記録 = 1 : 1 : 3
+// 曜日ラベル行＋日付セル行（7列）の2行構成。
+// 成長記録のアップロード完了画面（_GrowthMonthCalendar）と同じデザイン
+// （日付セルに「日付＋花丸」をまとめて表示）を、週表示（1週間分）向けに
+// 踏襲している。
 // ══════════════════════════════════════════════════════════
 class _ContinuityCalendar extends StatelessWidget {
   final List<DateTime> weekDays;       // 7要素（月〜日）
@@ -488,60 +497,47 @@ class _ContinuityCalendar extends StatelessWidget {
     required this.onToggleTooltip,
   });
 
-  static const double _recordH = 120.0;
-  static const double _headerH = _recordH / 3; // = 40.0
+  // 成長記録のアップロード完了画面（_GrowthMonthCalendar）と同じ寸法
+  static const double _headerH = 24.0;
+  static const double _rowH = 56.0;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── 1行目：曜日ラベル ─────────────────────────────
+        // ── 曜日ラベル（月・火・水…の1文字）────────────────
         SizedBox(
           height: _headerH,
           child: Row(
-            children: List.generate(7, (i) => Expanded(
-              child: _HeaderCell(
-                text: AppStrings.habitWeekdays[i],
-                isWeekday: true,
-                isToday: AppDateUtils.dateKey(weekDays[i]) == todayKey,
+            children: List.generate(
+              7,
+              (i) => Expanded(
+                child: _WeekdayCell(text: AppStrings.habitWeekdays[i]),
               ),
-            )),
+            ),
           ),
         ),
-        // ── 2行目：日付 ───────────────────────────────────
+        const SizedBox(height: 2),
+        // ── 1週間分の日付セル（日付＋花丸を1セルにまとめる）──
         SizedBox(
-          height: _headerH,
-          child: Row(
-            children: List.generate(7, (i) => Expanded(
-              child: _HeaderCell(
-                text: '${weekDays[i].month}/${weekDays[i].day}',
-                isWeekday: false,
-                isToday: AppDateUtils.dateKey(weekDays[i]) == todayKey,
-              ),
-            )),
-          ),
-        ),
-        // ── 3行目：記録エリア（花丸・吹き出し）──────────────
-        SizedBox(
-          height: _recordH,
+          height: _rowH,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(7, (i) {
-              final key = AppDateUtils.dateKey(weekDays[i]);
-              final hasRecord = dailyTotals.containsKey(key);
-              final totalMin = dailyTotals[key] ?? 0;
+            children: weekDays.map((date) {
+              final key = AppDateUtils.dateKey(date);
               return Expanded(
-                child: _RecordCell(
-                  hasRecord: hasRecord,
-                  totalMinutes: totalMin,
+                child: _DayCell(
+                  date: date,
+                  hasRecord: dailyTotals.containsKey(key),
+                  totalMinutes: dailyTotals[key] ?? 0,
                   backgroundColor: streakColors[key] ?? Colors.white,
                   isToday: key == todayKey,
                   isOpen: openTooltipKey == key,
                   onTap: () => onToggleTooltip(key),
                 ),
               );
-            }),
+            }).toList(),
           ),
         ),
       ],
@@ -583,40 +579,28 @@ class _WeekNavButton extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════
-// ヘッダーセル（曜日・日付行 共用）
+// 曜日ラベルセル（1文字表示：月・火・水…）
 // ══════════════════════════════════════════════════════════
-class _HeaderCell extends StatelessWidget {
+class _WeekdayCell extends StatelessWidget {
   final String text;
-  final bool isWeekday;
-  final bool isToday;
 
-  const _HeaderCell({
-    required this.text,
-    required this.isWeekday,
-    required this.isToday,
-  });
+  const _WeekdayCell({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(1.5),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isWeekday ? AppColors.themeLight : Colors.white,
-        border: Border.all(
-          color: isToday ? AppColors.theme : AppColors.themeBorder,
-          width: isToday ? 2.5 : 0.8,
-        ),
+        color: AppColors.themeLight,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Center(
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isWeekday ? 11 : 16,
-            fontWeight: isWeekday ? FontWeight.w600 : FontWeight.bold,
-            color: isWeekday ? AppColors.themeDark : Colors.black87,
-          ),
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.themeDark,
         ),
       ),
     );
@@ -624,15 +608,19 @@ class _HeaderCell extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════
-// 記録セル（3行目）
+// 日付セル
 //
-// hasRecord=true のとき花丸（◎）を表示。
+// 日付番号＋（記録がある日のみ）花丸を1セル内にまとめて表示する。
+// 成長記録のアップロード完了画面（_GrowthDayCell）と同じデザイン。
 // 花丸タップで親（_HabitMainScreenState）の onTap を呼び出し、
 // どのセルの吹き出しを開くかを親で一元管理する。
 // これにより、別のセルをタップすると表示中の吹き出しは自動的に
 // 閉じ、新しいセルの吹き出しに切り替わる。
+// 吹き出しには、その日の作業時間の合計（分）を表示する。
+// 週の途中で月が替わることがあるため、1日のセルのみ「月/日」表記にする。
 // ══════════════════════════════════════════════════════════
-class _RecordCell extends StatelessWidget {
+class _DayCell extends StatelessWidget {
+  final DateTime date;
   final bool hasRecord;
   final int totalMinutes;
   final Color backgroundColor;
@@ -640,7 +628,8 @@ class _RecordCell extends StatelessWidget {
   final bool isOpen;
   final VoidCallback onTap;
 
-  const _RecordCell({
+  const _DayCell({
+    required this.date,
     required this.hasRecord,
     required this.totalMinutes,
     required this.backgroundColor,
@@ -651,48 +640,63 @@ class _RecordCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dayText = date.day == 1 ? '${date.month}/1' : '${date.day}';
     return Container(
-      margin: const EdgeInsets.all(1.5),
+      margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(
           color: isToday ? AppColors.theme : AppColors.themeBorder,
-          width: isToday ? 2.5 : 0.8,
+          width: isToday ? 2 : 0.6,
         ),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: hasRecord
-          ? Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                // ── 花丸ボタン ───────────────────────────
-                // セル高さ(120)の概ね65%相当の80pxで表示
-                GestureDetector(
-                  onTap: onTap,
-                  child: Image.asset(
-                    HabitConfig.currentFlowerCircleAssetPath,
-                    width: 80,
-                    height: 80,
-                  ),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(height: 2),
+              Text(
+                dayText,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                  color: Colors.black87,
                 ),
-                // ── 吹き出し ─────────────────────────────
-                // 花丸の上端（中心から半径40px上）のすぐ上に配置
-                if (isOpen)
-                  Positioned(
-                    bottom: 40 + 38, // セル中央 + 花丸半径 + 適度な余白
-                    child: GestureDetector(
-                      onTap: onTap, // 吹き出しタップで閉じる
-                      child: _TooltipBubble(
-                        label: totalMinutes == 0
-                            ? AppStrings.habitTooltipNoTime
-                            : '$totalMinutes${AppStrings.habitTooltipMinSuffix}',
+              ),
+              if (hasRecord)
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onTap,
+                    child: Center(
+                      child: Image.asset(
+                        HabitConfig.currentFlowerCircleAssetPath,
+                        width: 30,
+                        height: 30,
                       ),
                     ),
                   ),
-              ],
-            )
-          : null, // データなし：空白
+                ),
+            ],
+          ),
+          // ── 吹き出し ─────────────────────────────────
+          if (hasRecord && isOpen)
+            Positioned(
+              bottom: 44,
+              child: GestureDetector(
+                onTap: onTap, // 吹き出しタップで閉じる
+                child: _TooltipBubble(
+                  label: totalMinutes == 0
+                      ? AppStrings.habitTooltipNoTime
+                      : '$totalMinutes${AppStrings.habitTooltipMinSuffix}',
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

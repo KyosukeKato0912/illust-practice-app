@@ -238,6 +238,10 @@ class _TimerPanel extends StatelessWidget {
   // リセットボタンのサイズ
   static const double _resetSize = 72.0;
   static const double _resetRight = 12.0;
+  // リセットボタンと時刻文字の間の余白
+  static const double _resetGap = 8.0;
+  // 時刻表示の文字サイズ（カウントダウン・カウントアップ共通）
+  static const double _timeFontSize = 44.0;
 
   const _TimerPanel({
     required this.label,
@@ -274,7 +278,10 @@ class _TimerPanel extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              // 右側はリセットボタン（右端に重ねる）の分だけ空け、
+              // 時刻の文字がボタンに被らないようにする。
+              padding: const EdgeInsets.fromLTRB(
+                  16, 20, _resetSize + _resetRight + _resetGap, 20),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(16),
@@ -286,7 +293,7 @@ class _TimerPanel extends StatelessWidget {
                   displayText,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 64,
+                    fontSize: _timeFontSize,
                     fontWeight: FontWeight.bold,
                     color: textColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
