@@ -289,6 +289,9 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
     }
     if (_isGeneratingPdf) return;
 
+    // タップした時点で「NEW」既読にする（生成の成否は問わない）
+    ref.read(growthPdfNewBadgeSeenProvider.notifier).markSeen();
+
     setState(() => _isGeneratingPdf = true);
     try {
       final bytes = await GrowthPdfService.build(records);
@@ -421,6 +424,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
     final allRecords = ref.watch(growthProvider);
     final records = _applyFilter(allRecords);
     final hasReachedMaxCount = ref.watch(growthMaxCountReachedProvider);
+    final hasSeenPdfNewBadge = ref.watch(growthPdfNewBadgeSeenProvider);
+    final showPdfNewBadge = hasReachedMaxCount && !hasSeenPdfNewBadge;
 
     return Scaffold(
       appBar: _isSelectionMode
@@ -670,39 +675,82 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                     if (hasReachedMaxCount) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.theme,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey.shade300,
-                            disabledForegroundColor: Colors.grey.shade500,
-                            minimumSize: const Size(0, 52),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: _isGeneratingPdf
-                              ? null
-                              : () => _onPdfTap(context, allRecords),
-                          icon: _isGeneratingPdf
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                        // Stack は非配置の子を持たないため、明示的な高さ
+                        // （他の3ボタンと同じ52）を与えないと高さ0に潰れる。
+                        child: SizedBox(
+                          height: 52,
+                          child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned.fill(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.theme,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor:
+                                      Colors.grey.shade300,
+                                  disabledForegroundColor:
+                                      Colors.grey.shade500,
+                                  minimumSize: const Size(0, 52),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: _isGeneratingPdf
+                                    ? null
+                                    : () => _onPdfTap(context, allRecords),
+                                icon: _isGeneratingPdf
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.picture_as_pdf_outlined,
+                                        size: 20),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    AppStrings.growthPdfButton,
+                                    maxLines: 1,
+                                    style: const TextStyle(fontSize: 13),
                                   ),
-                                )
-                              : const Icon(Icons.picture_as_pdf_outlined,
-                                  size: 20),
-                          label: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              AppStrings.growthPdfButton,
-                              maxLines: 1,
-                              style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
                             ),
+                            // ── 「NEW」バッジ：初解禁後、PDFボタンを
+                            //    初めてタップするまでの間だけ表示。
+                            //    ボタン上部・左寄せに配置する ──
+                            if (showPdfNewBadge)
+                              Positioned(
+                                top: -14,
+                                left: 4,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text(
+                                      AppStrings.growthPdfNewBadge,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                           ),
                         ),
                       ),

@@ -132,13 +132,16 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
     setState(() => _isUploading = true);
     try {
-      final isMaxCountReached = await ref
+      final uploadResult = await ref
           .read(growthProvider.notifier)
           .confirmUpload(picked, durationMin: durationMin);
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        AppRouter.growthUploadComplete(isMaxCountReached: isMaxCountReached),
+        AppRouter.growthUploadComplete(
+          isMaxCountReached: uploadResult.isMaxCountReached,
+          isStreakMilestoneReached: uploadResult.isStreakMilestoneReached,
+        ),
       );
     } catch (_) {
       if (!mounted) return;

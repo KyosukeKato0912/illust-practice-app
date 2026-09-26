@@ -150,12 +150,25 @@ class GrowthRepository {
     return _metaDataSource.hasReachedMaxCountOnce();
   }
 
+  /// PDFボタンの「NEW」表示を既に見た（＝タップした）ことがあるか。
+  Future<bool> hasSeenPdfNewBadge() async {
+    return _metaDataSource.hasSeenPdfNewBadge();
+  }
+
+  /// PDFボタンの「NEW」表示を見た（＝タップした）ことを記録する。
+  Future<void> markSeenPdfNewBadge() async {
+    await _metaDataSource.markSeenPdfNewBadge();
+  }
+
   /// 【検証用】保持上限到達フラグをON/OFF切り替える。
+  /// OFFにする際は、PDFボタンの「NEW」既読フラグもあわせてリセットする
+  /// （再度ONにしたときに「初解禁」の挙動一式を検証し直せるようにするため）。
   Future<void> setMaxCountReachedFlagForDebug(bool reached) async {
     if (reached) {
       await _metaDataSource.markReachedMaxCountOnce();
     } else {
       await _metaDataSource.resetHasReachedMaxCountOnce();
+      await _metaDataSource.resetHasSeenPdfNewBadge();
     }
   }
 

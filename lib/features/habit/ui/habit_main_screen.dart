@@ -297,11 +297,12 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                 const SizedBox(height: 4),
 
                 // ── 期間ラベル＋週切り替え ────────────────────
-                // 日付リンクは前週/次週ボタン（32px）と同等かやや大きめの
-                // 文字サイズにする。狭い画面ではみ出さないよう、
-                // ラベル部分のみ FittedBox で縮小する（ボタンは固定サイズ）。
+                // 日付リンク・週切り替えボタンがカレンダー本体より
+                // 目立ちすぎないよう、やや小さめの文字・ボタンサイズにする。
+                // 狭い画面ではみ出さないよう、ラベル部分のみ FittedBox で
+                // 縮小する（ボタンは固定サイズ）。
                 SizedBox(
-                  height: 40,
+                  height: 34,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -321,7 +322,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                                 Text(
                                   _dateRangeLabel,
                                   style: TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 19,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.theme,
                                     decoration: TextDecoration.underline,
@@ -330,7 +331,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 const Icon(Icons.calendar_today,
-                                    size: 22, color: AppColors.theme),
+                                    size: 18, color: AppColors.theme),
                               ],
                             ),
                           ),
@@ -550,7 +551,8 @@ class _ContinuityCalendar extends StatelessWidget {
 //
 // shared/patterns/full_image_screen.dart の _NavButton と
 // 同じデザイン（角丸・テーマカラー背景・白アイコン）を踏襲。
-// こちらは期間ラベル横に置く小型サイズで使用する。
+// こちらは期間ラベル横に置く小型サイズで使用する
+// （カレンダー本体より目立たないよう、やや控えめのサイズにしている）。
 // ══════════════════════════════════════════════════════════
 class _WeekNavButton extends StatelessWidget {
   final IconData icon;
@@ -567,13 +569,13 @@ class _WeekNavButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.theme,
         foregroundColor: Colors.white,
-        minimumSize: const Size(32, 32),
+        minimumSize: const Size(26, 26),
         padding: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8)),
+            borderRadius: BorderRadius.circular(7)),
       ),
       onPressed: onPressed,
-      child: Icon(icon, size: 18),
+      child: Icon(icon, size: 15),
     );
   }
 }

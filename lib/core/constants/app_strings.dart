@@ -216,7 +216,7 @@ abstract class AppStrings {
 
   // カレンダー 曜日ラベル（月曜始まり）
   static const List<String> habitWeekdays = [
-    '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日',
+    '月', '火', '水', '木', '金', '土', '日',
   ];
 
   // ── 成長記録 ────────────────────────────────────────────
@@ -264,6 +264,9 @@ abstract class AppStrings {
 
   // ── 成長記録：PDF書き出し ──────────────────────────────
   static const String growthPdfButton = 'PDF';
+
+  /// PDF機能が初解禁された直後のみPDFボタンに表示する目印
+  static const String growthPdfNewBadge = 'NEW';
 
   /// PDF書き出し対象が0件（絞込結果を含む）の場合のSnackBar文言
   static const String growthPdfEmptyError = '書き出せる画像がありません';
@@ -335,13 +338,30 @@ abstract class AppStrings {
       '上限到達フラグをOFFにしました';
 
   // ── 成長記録：アップロード完了画面 ──────────────────────
-  static const String growthUploadCompleteTitle = 'アップロードが完了しました';
+  static const String growthUploadCompleteTitle = 'イラストを追加しました';
   static const String growthUploadCompleteBackButton = '成長記録メインへ';
+  static const String growthUploadCompleteContinueButton = '続けて追加';
+
+  /// 今日を含めた連続アップロード日数が [GrowthConfig.streakMilestoneDays]
+  /// （21日＝3週間）にちょうど到達したアップロード完了時のみ表示する
+  /// 特別メッセージ。保持上限到達メッセージと同時に発生する場合は、
+  /// このメッセージ → 空行1つ（改行2つ） → 保持上限到達メッセージの順で
+  /// 続けて表示する。
+  static const String growthUploadCompleteStreakMilestoneMessage =
+      '3週間連続おめでとうございます！\n'
+      '毎日続けたあなたは偉い！\n'
+      '引き続き頑張りましょう';
 
   /// 保持上限枚数にちょうど到達したアップロード完了時のみ表示する
   /// 特別メッセージ（{count} は [GrowthConfig.maxRecordCount] に置換）
   static const String growthUploadCompleteMaxCountMessage =
-      'これで{count}枚達成です！\nこれからも成長の記録を続けていきましょう';
+      '{count}枚達成おめでとうございます！\nここまで続けたあなたはとても立派です\n'
+      'これまでの努力の証がPDFに残せるようになりました\n'
+      '早速DLしてみましょう\n'
+      '以降は成長記録メイン画面からいつでもPDFをDLできます';
+
+  /// 上記メッセージとあわせて表示するPDFダウンロードボタンの文言
+  static const String growthUploadCompletePdfButton = 'PDFをダウンロード';
 
   /// 今日の作業時間合計表示のラベル（合計が1分以上の場合のみ表示）
   static const String growthUploadCompleteTodayDurationLabel = '今日の作業時間合計：';

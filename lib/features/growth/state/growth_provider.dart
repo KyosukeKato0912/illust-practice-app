@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gal/gal.dart';
 import '../../../core/config/growth_config.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/file_utils.dart';
 import '../../../shared/testdata/growth_testdata.dart';
 import '../domain/growth_record.dart';
 import '../domain/growth_repository.dart';
+import '../domain/practice_day.dart';
 import 'growth_practice_log_provider.dart';
 
 // ══════════════════════════════════════════════════════════
@@ -43,6 +45,42 @@ class GrowthMaxCountFlagNotifier extends StateNotifier<bool> {
 final growthMaxCountReachedProvider =
     StateNotifierProvider<GrowthMaxCountFlagNotifier, bool>((ref) {
   return GrowthMaxCountFlagNotifier();
+});
+
+// ══════════════════════════════════════════════════════════
+// GrowthPdfNewBadgeNotifier / growthPdfNewBadgeSeenProvider
+//
+// PDFボタンの「NEW」表示を既に見た（＝タップした）ことがあるかどうかの
+// 永続フラグ。false の間、成長記録メイン画面のPDFボタンに「NEW」を表示する
+// （＝保持上限に初めて到達してから、PDFボタンを初めてタップするまでの間）。
+// ══════════════════════════════════════════════════════════
+class GrowthPdfNewBadgeNotifier extends StateNotifier<bool> {
+  final GrowthRepository _repository;
+
+  GrowthPdfNewBadgeNotifier({GrowthRepository? repository})
+      : _repository = repository ?? GrowthRepository(),
+        super(true) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    state = await _repository.hasSeenPdfNewBadge();
+  }
+
+  Future<void> markSeen() async {
+    if (state) return;
+    await _repository.markSeenPdfNewBadge();
+    state = true;
+  }
+
+  /// 【検証用】GrowthNotifier.toggleMaxCountReachedFlagForDebug() が
+  /// フラグをOFFにした際に呼ばれ、「NEW」を再度見せられる状態に戻す。
+  void resetForDebug() => state = false;
+}
+
+final growthPdfNewBadgeSeenProvider =
+    StateNotifierProvider<GrowthPdfNewBadgeNotifier, bool>((ref) {
+  return GrowthPdfNewBadgeNotifier();
 });
 
 // ══════════════════════════════════════════════════════════
@@ -116,15 +154,22 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   /// [durationMin] は所要時間（分・任意）。呼び出し側でバリデーション
   /// 済みの値を渡すこと。
   ///
-  /// 戻り値は今回のアップロードで保持枚数が上限
-  /// （[GrowthConfig.maxRecordCount]）に「生涯で初めて」到達したかどうか。
-  /// 一度到達した後は、削除して枚数が減り再度上限に達しても false になる
-  /// （特別メッセージは初回到達時のみ表示するため）。
-  Future<bool> confirmUpload(XFile picked, {int? durationMin}) {
+  /// 戻り値は次の2つのフラグをまとめたレコード：
+  ///   ・isMaxCountReached … 今回のアップロードで保持枚数が上限
+  ///     （[GrowthConfig.maxRecordCount]）に「生涯で初めて」到達したか。
+  ///     一度到達した後は、削除して枚数が減り再度上限に達しても false に
+  ///     なる（特別メッセージは初回到達時のみ表示するため）。
+  ///   ・isStreakMilestoneReached … 今日を含めた連続アップロード日数が
+  ///     ちょうど [GrowthConfig.streakMilestoneDays] に達したか。
+  ///     こちらは「生涯で一度」ではなく、連続記録が途切れて再度
+  ///     ちょうどその日数に達した場合は再び true になる。
+  Future<({bool isMaxCountReached, bool isStreakMilestoneReached})>
+      confirmUpload(XFile picked, {int? durationMin}) {
     return _saveRecord(picked, durationMin: durationMin);
   }
 
-  Future<bool> _saveRecord(XFile picked, {int? durationMin}) async {
+  Future<({bool isMaxCountReached, bool isStreakMilestoneReached})>
+      _saveRecord(XFile picked, {int? durationMin}) async {
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
     final serialNumber = await _repository.nextSerialNumberForDate(date);
@@ -170,7 +215,31 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
     if (reachedFirstTime) {
       _ref.read(growthMaxCountReachedProvider.notifier).markReached();
     }
-    return reachedFirstTime;
+
+    // 今日を含めた連続アップロード日数が、ちょうど
+    // GrowthConfig.streakMilestoneDays に達したかどうかを判定する。
+    final practiceDays = _ref.read(growthPracticeDaysProvider);
+    final currentStreak = _currentStreakLength(practiceDays, date);
+    final streakMilestoneReached =
+        currentStreak == GrowthConfig.streakMilestoneDays;
+
+    return (
+      isMaxCountReached: reachedFirstTime,
+      isStreakMilestoneReached: streakMilestoneReached,
+    );
+  }
+
+  /// [today] を含めて何日連続で記録があるかを数える（記録が途切れた
+  /// 時点で打ち切り）。
+  int _currentStreakLength(List<PracticeDay> days, DateTime today) {
+    final keys = {for (final d in days) AppDateUtils.dateKey(d.date)};
+    var count = 0;
+    var cursor = today;
+    while (keys.contains(AppDateUtils.dateKey(cursor))) {
+      count++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return count;
   }
 
   /// 指定したidの成長記録をまとめて削除する。
@@ -217,6 +286,8 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
       _ref.read(growthMaxCountReachedProvider.notifier).markReached();
     } else {
       _ref.read(growthMaxCountReachedProvider.notifier).reset();
+      // フラグOFFにあわせて「NEW」既読フラグも巻き戻す（再検証用）。
+      _ref.read(growthPdfNewBadgeSeenProvider.notifier).resetForDebug();
     }
   }
 }

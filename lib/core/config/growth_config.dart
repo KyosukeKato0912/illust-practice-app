@@ -30,4 +30,9 @@ abstract class GrowthConfig {
   /// 独立して管理しており、本フラグとは連動しない。
   /// ⚠ リリース時は必ず false にすること。
   static const bool useTestData = false;
+
+  /// 継続日数のマイルストーン特別メッセージを表示する連続日数。
+  /// アップロード完了画面で、今日を含めた連続アップロード日数が
+  /// ちょうどこの値に達した回のみ表示する。
+  static const int streakMilestoneDays = 21;
 }

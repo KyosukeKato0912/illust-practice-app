@@ -116,10 +116,18 @@ abstract class AppRouter {
   ///
   /// [UploadScreen] から呼び出す。[isMaxCountReached] が true の場合、
   /// 保持上限枚数にちょうど到達した旨の特別メッセージを表示する。
-  static Route<void> growthUploadComplete({bool isMaxCountReached = false}) =>
+  /// [isStreakMilestoneReached] が true の場合、連続アップロード日数が
+  /// マイルストーンに到達した旨の特別メッセージを表示する
+  /// （両方trueの場合は両方のメッセージを続けて表示する）。
+  static Route<void> growthUploadComplete({
+    bool isMaxCountReached = false,
+    bool isStreakMilestoneReached = false,
+  }) =>
       MaterialPageRoute(
-        builder: (_) =>
-            UploadCompleteScreen(isMaxCountReached: isMaxCountReached),
+        builder: (_) => UploadCompleteScreen(
+          isMaxCountReached: isMaxCountReached,
+          isStreakMilestoneReached: isStreakMilestoneReached,
+        ),
       );
 
   /// 成長記録 拡大表示画面へのルート

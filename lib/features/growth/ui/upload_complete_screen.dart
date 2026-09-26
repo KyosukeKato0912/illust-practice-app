@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/growth_config.dart';
@@ -5,16 +6,24 @@ import '../../../core/config/habit_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
+import '../../../core/router/app_router.dart';
+import '../../../core/services/growth_pdf_service.dart';
 import '../../../core/utils/date_utils.dart';
+import '../domain/growth_record.dart';
 import '../state/growth_practice_log_provider.dart';
+import '../state/growth_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // アップロード完了画面
 //
-// 「アップロードが完了しました」の表示に加え、今回のアップロードで
+// 「イラストを追加しました」の表示に加え、今回のアップロードで
 // 更新された成長記録の継続カレンダーを表示する。
 // [isMaxCountReached] が true の場合（保持上限枚数にちょうど到達した
-// アップロード時のみ）特別メッセージも表示する。
+// アップロード時のみ）、[isStreakMilestoneReached] が true の場合
+// （今日を含めた連続アップロード日数が [GrowthConfig.streakMilestoneDays]
+// にちょうど到達した時のみ）、それぞれ特別メッセージを表示する。
+// 両方trueの場合は「連続日数メッセージ→空行→上限到達メッセージ」の順で
+// 1つのテキストにまとめて表示する（PDFボタンは上限到達時のみ表示）。
 //
 // 継続カレンダーは features/habit/ui/habit_main_screen.dart の
 // _ContinuityCalendar と同じ配色ルール（連続記録日数に応じて
@@ -31,8 +40,13 @@ import '../state/growth_practice_log_provider.dart';
 // ══════════════════════════════════════════════════════════
 class UploadCompleteScreen extends ConsumerStatefulWidget {
   final bool isMaxCountReached;
+  final bool isStreakMilestoneReached;
 
-  const UploadCompleteScreen({super.key, this.isMaxCountReached = false});
+  const UploadCompleteScreen({
+    super.key,
+    this.isMaxCountReached = false,
+    this.isStreakMilestoneReached = false,
+  });
 
   @override
   ConsumerState<UploadCompleteScreen> createState() =>
@@ -44,10 +58,44 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
   // null のときはどの吹き出しも表示していない。
   String? _openTooltipKey;
 
+  /// PDF生成中フラグ（多重タップ防止・ローディング表示用）。
+  /// [widget.isMaxCountReached] が true の回（保持上限に初めて到達した
+  /// アップロード完了時）のみ、本画面にもPDFボタンを表示する。
+  bool _isGeneratingPdf = false;
+
   void _toggleTooltip(String dateKey) {
     setState(() {
       _openTooltipKey = (_openTooltipKey == dateKey) ? null : dateKey;
     });
+  }
+
+  // ── PDF書き出し（growth_main_screen.dart の _onPdfTap と同じ手順） ──
+  // ⚠ ここでは成長記録メイン画面PDFボタンの「NEW」既読化は行わない。
+  //   「NEW」は成長記録メイン画面のPDFボタンのみに紐づく表示のため、
+  //   本画面からのダウンロードでは既読にしない。
+  Future<void> _onPdfTap(List<GrowthRecord> records) async {
+    if (records.isEmpty || _isGeneratingPdf) return;
+
+    setState(() => _isGeneratingPdf = true);
+    try {
+      final bytes = await GrowthPdfService.build(records);
+      if (!mounted) return;
+      await FilePicker.platform.saveFile(
+        fileName: GrowthPdfService.buildFileName(DateTime.now()),
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        bytes: bytes,
+      );
+    } catch (e, st) {
+      debugPrint('[GrowthPdfService] PDF生成に失敗しました: $e');
+      debugPrint('$st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
+      );
+    } finally {
+      if (mounted) setState(() => _isGeneratingPdf = false);
+    }
   }
 
   // ── 「今日が属する月」を埋める週単位グリッドを組み立てる ──
@@ -106,6 +154,21 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
   Widget build(BuildContext context) {
     // 練習日の記録（画像を削除しても残る）。GrowthConfig.useTestData に従う
     final practiceDays = ref.watch(growthPracticeDaysProvider);
+    // PDFボタン用（初解禁時初回のみ表示）。絞込の影響を受けない全件。
+    final allRecords = ref.watch(growthProvider);
+
+    // 連続日数マイルストーン・保持上限到達の特別メッセージを組み立てる。
+    // 両方trueの場合は「連続日数→空行→上限到達」の順で1つにまとめる。
+    final specialMessages = <String>[
+      if (widget.isStreakMilestoneReached)
+        AppStrings.growthUploadCompleteStreakMilestoneMessage,
+      if (widget.isMaxCountReached)
+        AppStrings.growthUploadCompleteMaxCountMessage.replaceAll(
+          '{count}',
+          '${GrowthConfig.maxRecordCount}',
+        ),
+    ];
+    final specialMessage = specialMessages.join('\n\n');
     final now = DateTime.now();
 
     final weeks = _buildMonthWeeks(now);
@@ -155,15 +218,44 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              if (widget.isMaxCountReached) ...[
+              if (specialMessages.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  AppStrings.growthUploadCompleteMaxCountMessage.replaceAll(
-                    '{count}',
-                    '${GrowthConfig.maxRecordCount}',
-                  ),
+                  specialMessage,
                   style: const TextStyle(fontSize: 15),
                   textAlign: TextAlign.center,
+                ),
+              ],
+              if (widget.isMaxCountReached) ...[
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.theme,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade500,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed:
+                      _isGeneratingPdf ? null : () => _onPdfTap(allRecords),
+                  icon: _isGeneratingPdf
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.picture_as_pdf_outlined, size: 20),
+                  label: const Text(
+                    AppStrings.growthUploadCompletePdfButton,
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ],
               // ── 今日の作業時間合計（1分以上のときのみ表示） ──
@@ -208,6 +300,29 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
               ),
 
               const SizedBox(height: 40),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.theme,
+                  side: const BorderSide(color: AppColors.theme),
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  // 本画面を「イラストを追加」画面へ置き換える。pushReplacement
+                  // を使うことで、確定後に再度本画面へ戻ってきてもスタックの
+                  // 深さが [成長記録メイン, 本画面] の2枚のまま保たれ、下の
+                  // 「成長記録メインへ」ボタン（1回のpopを前提）が引き続き
+                  // 正しく機能する。
+                  Navigator.pushReplacement(context, AppRouter.growthUpload());
+                },
+                child: const Text(
+                  AppStrings.growthUploadCompleteContinueButton,
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 12),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.theme,
@@ -218,9 +333,9 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
                   ),
                 ),
                 onPressed: () {
-                  // アップロード画面は pushReplacement で開いているため
-                  // （Navigator.pushReplacement(..., growthUploadComplete())）、
-                  // スタックには [成長記録メイン, 本画面] の2枚のみが積まれている。
+                  // アップロード画面・「続けて追加」いずれの経路でも本画面は
+                  // pushReplacement で開かれるため、スタックには常に
+                  // [成長記録メイン, 本画面] の2枚のみが積まれている。
                   // 1回のpopで成長記録メイン画面まで戻る。
                   Navigator.of(context).pop();
                 },

@@ -13,6 +13,8 @@ import 'package:hive/hive.dart';
 //     削除によって件数が上限を下回り、その後再度上限に達しても
 //     このフラグは一度trueになった後は変化しない
 //     （＝特別メッセージは二度と出さない）。
+//   ・PDFボタンの「NEW」既読フラグ。初解禁後、PDFボタンをタップする
+//     までの間だけ「NEW」を表示するために使う。
 //   ・継続カレンダー用の練習日記録（GrowthPracticeLogDataSource）へ、
 //     既存の成長記録から初回移行を済ませたかどうかのフラグ。
 // ══════════════════════════════════════════════════════════
@@ -20,6 +22,7 @@ class GrowthMetaDataSource {
   static const String boxName = 'growth_meta';
   static const String _keyHasReachedMaxCountOnce =
       'has_reached_max_count_once';
+  static const String _keyHasSeenPdfNewBadge = 'has_seen_pdf_new_badge';
   static const String _keyPracticeLogSeeded = 'practice_log_seeded';
 
   Future<Box> _openBox() async {
@@ -46,6 +49,25 @@ class GrowthMetaDataSource {
   Future<void> resetHasReachedMaxCountOnce() async {
     final box = await _openBox();
     await box.delete(_keyHasReachedMaxCountOnce);
+  }
+
+  /// PDFボタンの「NEW」表示を一度でも見た（＝ボタンをタップした）ことが
+  /// あるか。false の間、成長記録メイン画面のPDFボタンに「NEW」を表示する。
+  Future<bool> hasSeenPdfNewBadge() async {
+    final box = await _openBox();
+    return (box.get(_keyHasSeenPdfNewBadge) as bool?) ?? false;
+  }
+
+  /// PDFボタンの「NEW」表示を見た（＝タップした）ことを記録する。
+  Future<void> markSeenPdfNewBadge() async {
+    final box = await _openBox();
+    await box.put(_keyHasSeenPdfNewBadge, true);
+  }
+
+  /// 【検証用】PDFボタンの「NEW」既読フラグをリセットする。
+  Future<void> resetHasSeenPdfNewBadge() async {
+    final box = await _openBox();
+    await box.delete(_keyHasSeenPdfNewBadge);
   }
 
   /// 練習日記録への初回移行が済んでいるか
