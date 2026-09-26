@@ -73,7 +73,7 @@ class GrowthPdfNewBadgeNotifier extends StateNotifier<bool> {
     state = true;
   }
 
-  /// 【検証用】GrowthNotifier.toggleMaxCountReachedFlagForDebug() が
+  /// 【検証用】GrowthNotifier.setMaxCountReachedFlagForDebug(false) が
   /// フラグをOFFにした際に呼ばれ、「NEW」を再度見せられる状態に戻す。
   void resetForDebug() => state = false;
 }
@@ -276,13 +276,11 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
     return successCount;
   }
 
-  /// 【検証用】保持上限到達フラグをON/OFF切り替える。
-  /// GrowthConfig.showDebugMaxCountReachedToggleButton が true の間のみ、
-  /// UI（成長記録メイン画面）から呼び出される想定。
-  Future<void> toggleMaxCountReachedFlagForDebug() async {
-    final next = !_ref.read(growthMaxCountReachedProvider);
-    await _repository.setMaxCountReachedFlagForDebug(next);
-    if (next) {
+  /// 【検証用】保持上限到達フラグを明示的にON/OFF設定する。
+  /// features/maintenance/ui/maintenance_screen.dart から呼び出される想定。
+  Future<void> setMaxCountReachedFlagForDebug(bool value) async {
+    await _repository.setMaxCountReachedFlagForDebug(value);
+    if (value) {
       _ref.read(growthMaxCountReachedProvider.notifier).markReached();
     } else {
       _ref.read(growthMaxCountReachedProvider.notifier).reset();

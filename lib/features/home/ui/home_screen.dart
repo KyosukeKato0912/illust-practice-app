@@ -12,6 +12,9 @@ import '../../../shared/components/feedback_link_widget.dart';
 //
 // 5機能へのナビゲーションボタンを表示する。
 // 未実装機能は [enabled: false] で「準備中」グレーボタンになる。
+// AppConfig.featureMaintenance が true の間は、末尾にメンテナンス画面への
+// ボタンも表示する（「準備中」表示ではなく、false の間はボタンごと
+// 非表示になる）。
 // ══════════════════════════════════════════════════════════
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -74,6 +77,15 @@ class HomeScreen extends StatelessWidget {
                     enabled: AppConfig.featureProLesson,
                     onTap: () {}, // TODO: AppRouter.proLesson() に差し替える
                   ),
+                  if (AppConfig.featureMaintenance) ...[
+                    const SizedBox(height: 12),
+                    _FeatureNavButton(
+                      label: AppStrings.featureMaintenance,
+                      color: Colors.grey.shade700,
+                      onTap: () =>
+                          Navigator.push(context, AppRouter.maintenance()),
+                    ),
+                  ],
                   const SizedBox(height: 32),
                   FeedbackLinkWidget(
                     label: AppStrings.feedbackLinkLabelHome,

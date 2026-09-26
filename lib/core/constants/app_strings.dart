@@ -15,6 +15,7 @@ abstract class AppStrings {
   static const String featureHabit = '習慣化サポート';
   static const String featureProLesson = 'プロ絵師解説';
   static const String featureComingSoon = '準備中';
+  static const String featureMaintenance = 'メンテナンス';
 
   // ── X秒ドローイング ─────────────────────────────────────
   static const String drawingInitialTitle = 'X秒ドローイング準備';
@@ -320,20 +321,12 @@ abstract class AppStrings {
   /// 押された場合に表示するエラー
   static const String growthDurationInvalidError = '所要時間は半角数字で入力してください';
 
-  /// 【検証用】成長記録メイン画面の上限到達フラグ切り替えボタンのラベル
-  /// （現在OFF→ONにする場合）
-  static const String growthDebugMaxCountFlagOnButtonLabel =
-      '上限到達フラグをONにする(検証用)';
-
-  /// 【検証用】同上（現在ON→OFFにする場合）
-  static const String growthDebugMaxCountFlagOffButtonLabel =
-      '上限到達フラグをOFFにする(検証用)';
-
-  /// 【検証用】上限到達フラグをONにした直後に表示するメッセージ
+  /// 【検証用】メンテナンス画面で保持上限到達フラグをONに反映した
+  /// 直後に表示するメッセージ
   static const String growthDebugMaxCountFlagOnDoneMessage =
       '上限到達フラグをONにしました';
 
-  /// 【検証用】上限到達フラグをOFFにした直後に表示するメッセージ
+  /// 【検証用】同上（OFFに反映した場合）
   static const String growthDebugMaxCountFlagOffDoneMessage =
       '上限到達フラグをOFFにしました';
 
@@ -400,4 +393,29 @@ abstract class AppStrings {
   /// フィードバックフォームのURL
   static const String feedbackUrl =
       'https://docs.google.com/forms/d/1B1-qUU3T6P6Q70VuZJfYdj8WtT_4ZucfD95EMzBmA6M/edit';
+
+  // ── メンテナンス画面 ────────────────────────────────────
+  // 各機能に散らばっている検証用フラグ・数値をアプリ内から
+  // 操作するための画面。AppConfig.featureMaintenance が true の間だけ
+  // ホーム画面にボタンが表示される。
+  static const String maintenanceTitle = 'メンテナンス';
+
+  /// セクション見出し：成長記録関連の設定
+  static const String maintenanceGrowthSectionTitle = '成長記録';
+
+  /// 保持上限到達フラグのスイッチ ラベル・説明文
+  static const String maintenanceMaxCountReachedLabel = '保持上限到達フラグ';
+  static const String maintenanceMaxCountReachedOnDesc =
+      'ON（保持上限に到達済みの状態として動作する）';
+  static const String maintenanceMaxCountReachedOffDesc =
+      'OFF（未到達の状態として動作する）';
+
+  /// 画面下部の反映ボタン（選択中の内容を実際の動作に反映する）
+  static const String maintenanceApplyButton = '決定';
+
+  /// AppBarの「初期状態に戻す」アイコンのツールチップ・確認ダイアログ
+  static const String maintenanceResetTitle = '初期状態に戻す';
+  static const String maintenanceResetMessage =
+      '画面上の全ての設定を初期状態（リリース時の設定値）に戻し、即座に反映します。よろしいですか？';
+  static const String maintenanceResetDone = '初期状態に戻しました';
 }

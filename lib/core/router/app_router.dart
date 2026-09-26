@@ -14,6 +14,7 @@ import '../../features/habit/ui/habit_main_screen.dart';
 import '../../features/habit/ui/habit_settings_screen.dart';
 import '../../features/habit/ui/habit_timer_screen.dart';
 import '../../features/home/ui/home_screen.dart';
+import '../../features/maintenance/ui/maintenance_screen.dart';
 import '../../shared/patterns/full_image_screen.dart';
 
 // ══════════════════════════════════════════════════════════
@@ -77,6 +78,14 @@ abstract class AppRouter {
   /// 習慣化サポート メイン画面へのルート
   static Route<void> habit() => MaterialPageRoute(
         builder: (_) => const HabitMainScreen(),
+      );
+
+  /// メンテナンス画面へのルート
+  ///
+  /// [HomeScreen] から呼び出す。AppConfig.featureMaintenance が true の
+  /// 間のみ、ホーム画面にこの画面へのボタンが表示される。
+  static Route<void> maintenance() => MaterialPageRoute(
+        builder: (_) => const MaintenanceScreen(),
       );
 
   /// メリハリタイマー画面へのルート

@@ -3,22 +3,16 @@
 //
 // 成長記録の保持上限枚数など、ステータス管理に関わる数値は
 // ここに一元管理する。変更する際はこのファイルの値のみ書き換えればよい。
+//
+// ※ 保持上限到達フラグのON/OFF切り替え（検証用）は
+//   features/maintenance/ui/maintenance_screen.dart に移設した。
 // ══════════════════════════════════════════════════════════
 abstract class GrowthConfig {
   /// 保持できる成長記録の最大枚数。
   /// これを超えてアップロードされた場合、最も古いものから自動削除する。
   ///
   /// ※ 現在は検証用に10件。将来の正式リリース時に300へ変更予定。
-  static const int maxRecordCount = 10;
-
-  /// 検証用：成長記録メイン画面に「上限到達フラグON/OFF切り替え」ボタンを
-  /// 表示するかどうか。
-  ///
-  /// 上限到達の特別メッセージ（アップロード完了画面）は生涯で一度しか
-  /// 出ない仕組みのため、検証時に何度でも再現・巻き戻しできるよう
-  /// このボタンでフラグをON/OFFできるようにしている。
-  /// ⚠ リリース時は必ず false にすること。
-  static const bool showDebugMaxCountReachedToggleButton = true;
+  static const int maxRecordCount = 300;
 
   /// 検証用：成長記録の一覧を実データ（Hive）の代わりに
   /// shared/testdata/growth_testdata.dart のテストデータで表示するか
