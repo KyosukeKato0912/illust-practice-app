@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/growth_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../shared/components/app_bar_widget.dart';
+import '../../../shared/testdata/growth_testdata.dart';
+import '../../growth/state/growth_practice_log_provider.dart';
 import '../../growth/state/growth_provider.dart';
+import '../../habit/state/habit_practice_provider.dart';
 
 // ══════════════════════════════════════════════════════════
 // メンテナンス画面
@@ -27,13 +33,29 @@ import '../../growth/state/growth_provider.dart';
 //
 // ── 現在の項目 ──
 //   1. 成長記録：保持上限到達フラグ（GrowthNotifier経由でHiveの
-//      実フラグを直接ON/OFFする。この項目自体はメンテナンス画面
-//      導入前から存在する“実データ”であり、初期値は「未到達
-//      （false）」＝リリース直後の状態と同じ扱いにしている）
+//      実フラグを直接ON/OFFする）。
+//      スイッチ自体は画面を開くたびに必ずfalse（リリース時の初期値）
+//      から始まる。今実際に動作に使われている値は、スイッチとは別に
+//      「現在の設定：ON/OFF」として常時表示する（ref.watchでリアル
+//      タイムに反映）。
+//   2. 成長記録：保持上限枚数（growthMaxRecordCountProvider経由）。
+//      入力欄は画面を開くたびに必ず GrowthConfig.maxRecordCount
+//      （リリース時の初期値＝300）から始まる。実際に判定・自動削除に
+//      使われている現在値も同様に別途表示する。
+//   3. 成長記録：テストデータ表示（growthUseTestDataProvider経由）。
+//   4. 習慣化サポート：テストデータ表示（habitUseTestDataProvider経由）。
+//      3・4とも、スイッチは画面を開くたびに必ずfalse（実データ表示）
+//      から始まる。
+//   5. テストデータ生成条件（growthTestDataConfigProvider経由、
+//      成長記録・習慣化サポート共通）。開始日・終了日・1日あたり枚数・
+//      1件あたりの所要時間を指定する。入力欄は画面を開くたびに必ず
+//      GrowthTestDataConfig.initial()（リリース時の初期値）から始まる。
+//   6. 習慣化サポート：登録件数表示（habitShowDebugDataCountProvider
+//      経由）。継続カレンダー下に登録件数・記録日数を表示するかどうか。
+//      スイッチは画面を開くたびに必ずfalse（非表示）から始まる。
 //
-// 今後の項目（GrowthConfig.maxRecordCount 等の数値コンフィグ）を
-// 追加する際は、_MaintenanceState に編集用フィールドを増やし、
-// _decide() / _resetToDefault() にそれぞれの反映・初期化処理を
+// 今後の項目を追加する際は、_MaintenanceScreenState に編集用フィールドを
+// 増やし、_decide() / _resetToDefault() にそれぞれの反映・初期化処理を
 // 追記していく。
 // ══════════════════════════════════════════════════════════
 class MaintenanceScreen extends ConsumerStatefulWidget {
@@ -46,30 +68,137 @@ class MaintenanceScreen extends ConsumerStatefulWidget {
 
 class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   // ── 成長記録：保持上限到達フラグ（画面上の未反映の選択値）──
-  // リリース時の初期値 = false（未到達）。
-  // 実機の現在値を確認しやすいよう、画面を開いた時点では実際の
-  // 現在値を初期表示する（決定を押すまでは実フラグには影響しない）。
-  late bool _maxCountReached;
+  // 画面を開くたび（＝アプリ起動のたび）に必ずリリース時の初期値
+  // （false＝未到達）から始める。現在の実際の値は
+  // ref.watch(growthMaxCountReachedProvider) を別途表示して確認できる
+  // ようにする。
+  bool _maxCountReached = false;
+
+  // ── 成長記録：保持上限枚数（画面上の未反映の選択値）──
+  // 画面を開くたびに必ず GrowthConfig.maxRecordCount（リリース時の
+  // 初期値）から始める。
+  late final TextEditingController _maxRecordCountController =
+      TextEditingController(text: '${GrowthConfig.maxRecordCount}');
+
+  // ── 成長記録／習慣化サポート：テストデータ表示（画面上の未反映の
+  //    選択値）── 画面を開くたびに必ず false（リリース時の初期値）
+  // から始める。
+  bool _growthUseTestData = false;
+  bool _habitUseTestData = false;
+  bool _habitShowDebugDataCount = false;
+
+  // ── テストデータ生成条件（画面上の未反映の選択値）──
+  // 画面を開くたびに必ず GrowthTestDataConfig.initial()（リリース時の
+  // 初期値）から始める。
+  late DateTime _testDataStartDate;
+  late DateTime _testDataEndDate;
+  late final TextEditingController _testDataCountPerDayController;
+  late final TextEditingController _testDataMinutesController;
 
   @override
   void initState() {
     super.initState();
-    _maxCountReached = ref.read(growthMaxCountReachedProvider);
+    final defaults = GrowthTestDataConfig.initial();
+    _testDataStartDate = defaults.startDate;
+    _testDataEndDate = defaults.endDate;
+    _testDataCountPerDayController =
+        TextEditingController(text: '${defaults.countPerDay}');
+    _testDataMinutesController =
+        TextEditingController(text: '${defaults.minutesPerEntry}');
+  }
+
+  @override
+  void dispose() {
+    _maxRecordCountController.dispose();
+    _testDataCountPerDayController.dispose();
+    _testDataMinutesController.dispose();
+    super.dispose();
+  }
+
+  /// [_maxRecordCountController] の内容を検証し、問題なければ整数を返す。
+  /// 不正な場合は SnackBar でエラーを表示して null を返す。
+  int? _validatedMaxRecordCount() {
+    final text = _maxRecordCountController.text.trim();
+    final value = int.tryParse(text);
+    if (value == null || value <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.maintenanceMaxRecordCountError)),
+      );
+      return null;
+    }
+    return value;
+  }
+
+  /// テストデータ生成条件の入力欄を検証し、問題なければ
+  /// [GrowthTestDataConfig] を返す。不正な場合は SnackBar でエラーを
+  /// 表示して null を返す。
+  GrowthTestDataConfig? _validatedTestDataConfig() {
+    final countPerDay = int.tryParse(_testDataCountPerDayController.text.trim());
+    if (countPerDay == null || countPerDay <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.maintenanceTestDataCountError)),
+      );
+      return null;
+    }
+    final minutesPerEntry =
+        int.tryParse(_testDataMinutesController.text.trim());
+    if (minutesPerEntry == null || minutesPerEntry <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.maintenanceTestDataMinutesError)),
+      );
+      return null;
+    }
+    if (_testDataStartDate.isAfter(_testDataEndDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.maintenanceTestDataRangeError)),
+      );
+      return null;
+    }
+    return GrowthTestDataConfig(
+      startDate: _testDataStartDate,
+      endDate: _testDataEndDate,
+      countPerDay: countPerDay,
+      minutesPerEntry: minutesPerEntry,
+    );
+  }
+
+  Future<void> _pickTestDataDate({required bool isStart}) async {
+    final initial = isStart ? _testDataStartDate : _testDataEndDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _testDataStartDate = picked;
+      } else {
+        _testDataEndDate = picked;
+      }
+    });
   }
 
   Future<void> _decide() async {
+    final maxRecordCount = _validatedMaxRecordCount();
+    if (maxRecordCount == null) return;
+    final testDataConfig = _validatedTestDataConfig();
+    if (testDataConfig == null) return;
+
     await ref
         .read(growthProvider.notifier)
         .setMaxCountReachedFlagForDebug(_maxCountReached);
+    ref.read(growthMaxRecordCountProvider.notifier).setValue(maxRecordCount);
+    ref.read(growthUseTestDataProvider.notifier).setValue(_growthUseTestData);
+    ref.read(habitUseTestDataProvider.notifier).setValue(_habitUseTestData);
+    ref
+        .read(habitShowDebugDataCountProvider.notifier)
+        .setValue(_habitShowDebugDataCount);
+    ref.read(growthTestDataConfigProvider.notifier).setValue(testDataConfig);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _maxCountReached
-              ? AppStrings.growthDebugMaxCountFlagOnDoneMessage
-              : AppStrings.growthDebugMaxCountFlagOffDoneMessage,
-        ),
-      ),
+      SnackBar(content: Text(AppStrings.maintenanceApplyDone)),
     );
   }
 
@@ -97,10 +226,26 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    setState(() => _maxCountReached = false);
+    setState(() {
+      _maxCountReached = false;
+      _maxRecordCountController.text = '${GrowthConfig.maxRecordCount}';
+      _growthUseTestData = false;
+      _habitUseTestData = false;
+      _habitShowDebugDataCount = false;
+      final defaults = GrowthTestDataConfig.initial();
+      _testDataStartDate = defaults.startDate;
+      _testDataEndDate = defaults.endDate;
+      _testDataCountPerDayController.text = '${defaults.countPerDay}';
+      _testDataMinutesController.text = '${defaults.minutesPerEntry}';
+    });
     await ref
         .read(growthProvider.notifier)
         .setMaxCountReachedFlagForDebug(false);
+    ref.read(growthMaxRecordCountProvider.notifier).resetToDefault();
+    ref.read(growthUseTestDataProvider.notifier).resetToDefault();
+    ref.read(habitUseTestDataProvider.notifier).resetToDefault();
+    ref.read(habitShowDebugDataCountProvider.notifier).resetToDefault();
+    ref.read(growthTestDataConfigProvider.notifier).resetToDefault();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(AppStrings.maintenanceResetDone)),
@@ -109,6 +254,17 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // メンテナンス画面が保存する値ではなく、実際に今動作に使われている
+    // 値（Hiveに永続化されている本物のフラグ／Provider経由の実効値）を
+    // そのまま表示する。
+    final currentMaxCountReached = ref.watch(growthMaxCountReachedProvider);
+    final currentMaxRecordCount = ref.watch(growthMaxRecordCountProvider);
+    final currentGrowthUseTestData = ref.watch(growthUseTestDataProvider);
+    final currentHabitUseTestData = ref.watch(habitUseTestDataProvider);
+    final currentHabitShowDebugDataCount =
+        ref.watch(habitShowDebugDataCountProvider);
+    final currentTestDataConfig = ref.watch(growthTestDataConfigProvider);
+
     return Scaffold(
       appBar: AppBarWidget(
         title: AppStrings.maintenanceTitle,
@@ -141,22 +297,258 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                 // ── 成長記録 ─────────────────────────────
                 _MaintenanceSectionCard(
                   title: AppStrings.maintenanceGrowthSectionTitle,
-                  child: SwitchListTile(
-                    value: _maxCountReached,
-                    activeColor: AppColors.theme,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (v) => setState(() => _maxCountReached = v),
-                    title: Text(
-                      AppStrings.maintenanceMaxCountReachedLabel,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    subtitle: Text(
-                      _maxCountReached
-                          ? AppStrings.maintenanceMaxCountReachedOnDesc
-                          : AppStrings.maintenanceMaxCountReachedOffDesc,
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── 現在の実際の状態（読み取り専用） ──
+                      _CurrentValueRow(
+                        value: currentMaxCountReached
+                            ? AppStrings.maintenanceOnLabel
+                            : AppStrings.maintenanceOffLabel,
+                        highlighted: currentMaxCountReached,
+                      ),
+                      const Divider(height: 20),
+                      SwitchListTile(
+                        value: _maxCountReached,
+                        activeColor: AppColors.theme,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) =>
+                            setState(() => _maxCountReached = v),
+                        title: Text(
+                          AppStrings.maintenanceMaxCountReachedLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          _maxCountReached
+                              ? AppStrings.maintenanceMaxCountReachedOnDesc
+                              : AppStrings.maintenanceMaxCountReachedOffDesc,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ),
+                      const Divider(height: 28),
+
+                      // ── 保持上限枚数 ──
+                      _CurrentValueRow(
+                        value:
+                            '$currentMaxRecordCount${AppStrings.maintenanceMaxRecordCountUnit}',
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppStrings.maintenanceMaxRecordCountLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _maxRecordCountController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          isDense: true,
+                          suffixText: AppStrings.maintenanceMaxRecordCountUnit,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 28),
+
+                      // ── テストデータ表示 ──
+                      _CurrentValueRow(
+                        value: currentGrowthUseTestData
+                            ? AppStrings.maintenanceOnLabel
+                            : AppStrings.maintenanceOffLabel,
+                        highlighted: currentGrowthUseTestData,
+                      ),
+                      const Divider(height: 20),
+                      SwitchListTile(
+                        value: _growthUseTestData,
+                        activeColor: AppColors.theme,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) =>
+                            setState(() => _growthUseTestData = v),
+                        title: Text(
+                          AppStrings.maintenanceUseTestDataLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          _growthUseTestData
+                              ? AppStrings.maintenanceUseTestDataOnDesc
+                              : AppStrings.maintenanceUseTestDataOffDesc,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── 習慣化サポート ─────────────────────────
+                _MaintenanceSectionCard(
+                  title: AppStrings.maintenanceHabitSectionTitle,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── テストデータ表示 ──
+                      _CurrentValueRow(
+                        value: currentHabitUseTestData
+                            ? AppStrings.maintenanceOnLabel
+                            : AppStrings.maintenanceOffLabel,
+                        highlighted: currentHabitUseTestData,
+                      ),
+                      const Divider(height: 20),
+                      SwitchListTile(
+                        value: _habitUseTestData,
+                        activeColor: AppColors.theme,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) =>
+                            setState(() => _habitUseTestData = v),
+                        title: Text(
+                          AppStrings.maintenanceUseTestDataLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          _habitUseTestData
+                              ? AppStrings.maintenanceUseTestDataOnDesc
+                              : AppStrings.maintenanceUseTestDataOffDesc,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ),
+                      const Divider(height: 28),
+
+                      // ── 登録件数表示 ──
+                      _CurrentValueRow(
+                        value: currentHabitShowDebugDataCount
+                            ? AppStrings.maintenanceOnLabel
+                            : AppStrings.maintenanceOffLabel,
+                        highlighted: currentHabitShowDebugDataCount,
+                      ),
+                      const Divider(height: 20),
+                      SwitchListTile(
+                        value: _habitShowDebugDataCount,
+                        activeColor: AppColors.theme,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) =>
+                            setState(() => _habitShowDebugDataCount = v),
+                        title: Text(
+                          AppStrings.maintenanceShowDebugDataCountLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          _habitShowDebugDataCount
+                              ? AppStrings.maintenanceShowDebugDataCountOnDesc
+                              : AppStrings.maintenanceShowDebugDataCountOffDesc,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── テストデータ生成条件 ───────────────────
+                _MaintenanceSectionCard(
+                  title: AppStrings.maintenanceTestDataSectionTitle,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CurrentValueRow(
+                        value:
+                            '${AppDateUtils.formatYMD(currentTestDataConfig.startDate)}'
+                            '〜${AppDateUtils.formatYMD(currentTestDataConfig.endDate)}・'
+                            '${currentTestDataConfig.countPerDay}${AppStrings.maintenanceTestDataCountUnit}/日・'
+                            '${currentTestDataConfig.minutesPerEntry}${AppStrings.maintenanceTestDataMinutesUnit}',
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MaintenanceDateField(
+                              label: AppStrings.maintenanceTestDataStartDateLabel,
+                              date: _testDataStartDate,
+                              onTap: () => _pickTestDataDate(isStart: true),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _MaintenanceDateField(
+                              label: AppStrings.maintenanceTestDataEndDateLabel,
+                              date: _testDataEndDate,
+                              onTap: () => _pickTestDataDate(isStart: false),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppStrings
+                                      .maintenanceTestDataCountPerDayLabel,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _testDataCountPerDayController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    suffixText: AppStrings
+                                        .maintenanceTestDataCountUnit,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppStrings.maintenanceTestDataMinutesLabel,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _testDataMinutesController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    suffixText: AppStrings
+                                        .maintenanceTestDataMinutesUnit,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -181,6 +573,74 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// 日付選択欄（ラベル＋タップで showDatePicker を開くボタン）
+// ══════════════════════════════════════════════════════════
+class _MaintenanceDateField extends StatelessWidget {
+  final String label;
+  final DateTime date;
+  final VoidCallback onTap;
+
+  const _MaintenanceDateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Text(AppDateUtils.formatYMD(date)),
+        ),
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// 「現在の設定：〇〇」読み取り専用表示
+// メンテナンス画面が保存するものではなく、実際に今動作に使われている
+// 値をそのまま見せるための行。
+// ══════════════════════════════════════════════════════════
+class _CurrentValueRow extends StatelessWidget {
+  final String value;
+  final bool highlighted;
+
+  const _CurrentValueRow({required this.value, this.highlighted = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          AppStrings.maintenanceCurrentValueLabel,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: highlighted ? AppColors.theme : Colors.grey.shade600,
+          ),
+        ),
+      ],
     );
   }
 }

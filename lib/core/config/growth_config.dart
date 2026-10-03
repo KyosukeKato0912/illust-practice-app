@@ -8,21 +8,29 @@
 //   features/maintenance/ui/maintenance_screen.dart に移設した。
 // ══════════════════════════════════════════════════════════
 abstract class GrowthConfig {
-  /// 保持できる成長記録の最大枚数。
+  /// 保持できる成長記録の最大枚数（リリース時の初期値）。
   /// これを超えてアップロードされた場合、最も古いものから自動削除する。
   ///
-  /// ※ 現在は検証用に10件。将来の正式リリース時に300へ変更予定。
+  /// ⚠ 実際に判定・削除処理で使われる値は、この定数そのものではなく
+  ///   [growthMaxRecordCountProvider]（features/growth/state/growth_provider.dart）
+  ///   経由の値。メンテナンス画面から検証用に上書きできるようにするため、
+  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
+  ///   必ずこの定数の値へ戻る。
   static const int maxRecordCount = 300;
 
   /// 検証用：成長記録の一覧を実データ（Hive）の代わりに
   /// shared/testdata/growth_testdata.dart のテストデータで表示するか
-  /// どうか。
+  /// どうか（リリース時の初期値）。
   ///
-  /// true の間は growthProvider の初期読み込みがテストデータに
-  /// 差し替わる（アップロード自体は通常どおりHiveに保存される）。
-  /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData で
-  /// 独立して管理しており、本フラグとは連動しない。
-  /// ⚠ リリース時は必ず false にすること。
+  /// ⚠ 実際に使われる値は、この定数そのものではなく
+  ///   [growthUseTestDataProvider]
+  ///   （features/growth/state/growth_practice_log_provider.dart）経由の
+  ///   値。メンテナンス画面から検証用に切り替えられるようにするため、
+  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
+  ///   必ずこの定数の値（false）へ戻る。
+  /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData
+  /// （実際には habitUseTestDataProvider）で独立して管理しており、
+  /// 本フラグとは連動しない。
   static const bool useTestData = false;
 
   /// 継続日数のマイルストーン特別メッセージを表示する連続日数。

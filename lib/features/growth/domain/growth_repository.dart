@@ -1,4 +1,3 @@
-import '../../../core/config/growth_config.dart';
 import '../../../data/datasources/growth_datasource.dart';
 import '../../../data/datasources/growth_meta_datasource.dart';
 import '../../../data/datasources/growth_practice_log_datasource.dart';
@@ -9,7 +8,7 @@ import 'practice_day.dart';
 // ══════════════════════════════════════════════════════════
 // GrowthRepository
 //
-// 成長記録のCRUDと、上限枚数（GrowthConfig.maxRecordCount）超過時の
+// 成長記録のCRUDと、上限枚数（呼び出し側から渡される maxCount）超過時の
 // 自動削除ロジックを担当する。
 // Hiveへのアクセスは GrowthDataSource / GrowthSerialCounterDataSource /
 // GrowthMetaDataSource / GrowthPracticeLogDataSource 経由のみ
@@ -82,19 +81,21 @@ class GrowthRepository {
     return _serialCounterDataSource.increment(date);
   }
 
-  /// 1件追加し、上限枚数（[GrowthConfig.maxRecordCount]）を超えていれば
-  /// 古いものから自動削除する。
+  /// 1件追加し、[maxCount] を超えていれば古いものから自動削除する。
   ///
   /// 戻り値は自動削除された記録の一覧（通常は空、または1件）。
   /// 画像ファイルの実体削除は行わないため、呼び出し側で削除すること。
   ///
   /// 練習日の記録（継続カレンダー用）にも1件分を加算する。
-  Future<List<GrowthRecord>> add(GrowthRecord record) async {
+  Future<List<GrowthRecord>> add(
+    GrowthRecord record, {
+    required int maxCount,
+  }) async {
     // 初回移行は「今回のレコードを追加する前」に行う（二重計上の防止）
     await _ensurePracticeLogSeeded();
     await _dataSource.add(record);
     await _practiceLogDataSource.addUpload(record.date, record.durationMin);
-    return _enforceMaxCount();
+    return _enforceMaxCount(maxCount);
   }
 
   /// 継続カレンダー用の練習日記録を全件取得する（順不同）。
@@ -127,15 +128,14 @@ class GrowthRepository {
     await _dataSource.delete(id);
   }
 
-  /// 保持上限（[GrowthConfig.maxRecordCount]）に「初めて」到達したかどうか
-  /// を判定する。
+  /// 保持上限（[maxCount]）に「初めて」到達したかどうかを判定する。
   ///
   /// 一度到達済み（フラグが立っている）の場合は、その後削除によって
   /// 件数が上限を下回り、再度上限に達しても false を返す
   /// （＝アップロード完了画面の特別メッセージは生涯で一度だけ）。
-  Future<bool> checkFirstTimeReachedMax() async {
+  Future<bool> checkFirstTimeReachedMax({required int maxCount}) async {
     final all = await _dataSource.getAll();
-    if (all.length < GrowthConfig.maxRecordCount) return false;
+    if (all.length < maxCount) return false;
 
     final alreadyReached = await _metaDataSource.hasReachedMaxCountOnce();
     if (alreadyReached) return false;
@@ -172,9 +172,9 @@ class GrowthRepository {
     }
   }
 
-  Future<List<GrowthRecord>> _enforceMaxCount() async {
+  Future<List<GrowthRecord>> _enforceMaxCount(int maxCount) async {
     final all = await _dataSource.getAll();
-    if (all.length <= GrowthConfig.maxRecordCount) return const [];
+    if (all.length <= maxCount) return const [];
 
     // 古い順（日付昇順→連番昇順）に並べ、超過分を削除する
     all.sort((a, b) {
@@ -182,7 +182,7 @@ class GrowthRepository {
       if (dateCompare != 0) return dateCompare;
       return a.serialNumber.compareTo(b.serialNumber);
     });
-    final overflowCount = all.length - GrowthConfig.maxRecordCount;
+    final overflowCount = all.length - maxCount;
     final removed = <GrowthRecord>[];
     for (var i = 0; i < overflowCount; i++) {
       await _dataSource.delete(all[i].id);

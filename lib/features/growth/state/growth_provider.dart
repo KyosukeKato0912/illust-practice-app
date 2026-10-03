@@ -84,6 +84,33 @@ final growthPdfNewBadgeSeenProvider =
 });
 
 // ══════════════════════════════════════════════════════════
+// GrowthMaxRecordCountNotifier / growthMaxRecordCountProvider
+//
+// 保持上限枚数の「実際に判定・削除処理で使う値」。
+// GrowthConfig.maxRecordCount（リリース時の初期値）をアプリ起動時の
+// 初期値として持ち、メンテナンス画面から検証用に上書きできるように
+// するためのProvider。
+//
+// ⚠ この値はどこにも永続化しない（アプリ再起動で必ず
+//   GrowthConfig.maxRecordCount の値に戻る）。GrowthNotifier は
+//   アップロード確定のたびにこの値を読み取り、GrowthRepository の
+//   上限判定・自動削除処理へ明示的に渡す。
+// ══════════════════════════════════════════════════════════
+class GrowthMaxRecordCountNotifier extends StateNotifier<int> {
+  GrowthMaxRecordCountNotifier() : super(GrowthConfig.maxRecordCount);
+
+  void setValue(int value) => state = value;
+
+  /// 【検証用】メンテナンス画面の「初期状態に戻す」から呼ばれる。
+  void resetToDefault() => state = GrowthConfig.maxRecordCount;
+}
+
+final growthMaxRecordCountProvider =
+    StateNotifierProvider<GrowthMaxRecordCountNotifier, int>((ref) {
+  return GrowthMaxRecordCountNotifier();
+});
+
+// ══════════════════════════════════════════════════════════
 // GrowthNotifier / growthProvider
 //
 // 成長記録リストの状態管理。GrowthMainScreen・UploadScreenの
@@ -111,7 +138,7 @@ final growthPdfNewBadgeSeenProvider =
 //   ・上限到達時は growthMaxCountReachedProvider の state も更新し、
 //     PDFダウンロードボタンの表示条件（フラグが立っている間のみ表示）
 //     に反映する
-//   ・GrowthConfig.useTestData が true の間は [_loadAll]（初期読み込み・
+//   ・growthUseTestDataProvider が true の間は [_loadAll]（初期読み込み・
 //     追加/削除後の再読込のいずれも）が shared/testdata/growth_testdata.dart
 //     のテストデータを返す。アップロード自体は通常どおりHiveに保存
 //     されるが、直後の _loadAll でテストデータに上書き表示される点に注意
@@ -129,7 +156,7 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   }
 
   Future<void> _loadAll() async {
-    state = GrowthConfig.useTestData
+    state = _ref.read(growthUseTestDataProvider)
         ? await _ref.read(growthTestDataProvider.future)
         : await _repository.getAll();
   }
@@ -170,6 +197,9 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
 
   Future<({bool isMaxCountReached, bool isStreakMilestoneReached})>
       _saveRecord(XFile picked, {int? durationMin}) async {
+    // メンテナンス画面での上書きを反映した「実際に使う」保持上限枚数。
+    // 上書きが無ければ GrowthConfig.maxRecordCount のまま。
+    final maxRecordCount = _ref.read(growthMaxRecordCountProvider);
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
     final serialNumber = await _repository.nextSerialNumberForDate(date);
@@ -194,7 +224,8 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
       durationMin: durationMin,
     );
 
-    final evicted = await _repository.add(record);
+    final evicted =
+        await _repository.add(record, maxCount: maxRecordCount);
     // 上限超過で自動削除された記録は、Hive上だけでなく画像ファイル
     // 実体も削除する（GrowthRepository.add はファイルI/Oを行わないため）
     for (final r in evicted) {
@@ -211,7 +242,8 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
     // 「生涯で初めて上限に到達したか」はRepository側の永続フラグで判定する
     // （現在の生存件数だけでは、削除→再アップロードでの再到達と
     // 区別できないため）
-    final reachedFirstTime = await _repository.checkFirstTimeReachedMax();
+    final reachedFirstTime =
+        await _repository.checkFirstTimeReachedMax(maxCount: maxRecordCount);
     if (reachedFirstTime) {
       _ref.read(growthMaxCountReachedProvider.notifier).markReached();
     }

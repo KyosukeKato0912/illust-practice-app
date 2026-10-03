@@ -321,15 +321,6 @@ abstract class AppStrings {
   /// 押された場合に表示するエラー
   static const String growthDurationInvalidError = '所要時間は半角数字で入力してください';
 
-  /// 【検証用】メンテナンス画面で保持上限到達フラグをONに反映した
-  /// 直後に表示するメッセージ
-  static const String growthDebugMaxCountFlagOnDoneMessage =
-      '上限到達フラグをONにしました';
-
-  /// 【検証用】同上（OFFに反映した場合）
-  static const String growthDebugMaxCountFlagOffDoneMessage =
-      '上限到達フラグをOFFにしました';
-
   // ── 成長記録：アップロード完了画面 ──────────────────────
   static const String growthUploadCompleteTitle = 'イラストを追加しました';
   static const String growthUploadCompleteBackButton = '成長記録メインへ';
@@ -403,6 +394,11 @@ abstract class AppStrings {
   /// セクション見出し：成長記録関連の設定
   static const String maintenanceGrowthSectionTitle = '成長記録';
 
+  /// 各設定項目の先頭に表示する「現在の実際の値」ラベルとON/OFF表記
+  static const String maintenanceCurrentValueLabel = '現在の設定：';
+  static const String maintenanceOnLabel = 'ON';
+  static const String maintenanceOffLabel = 'OFF';
+
   /// 保持上限到達フラグのスイッチ ラベル・説明文
   static const String maintenanceMaxCountReachedLabel = '保持上限到達フラグ';
   static const String maintenanceMaxCountReachedOnDesc =
@@ -410,8 +406,47 @@ abstract class AppStrings {
   static const String maintenanceMaxCountReachedOffDesc =
       'OFF（未到達の状態として動作する）';
 
+  /// 保持上限枚数の入力欄 ラベル・単位・入力エラー
+  static const String maintenanceMaxRecordCountLabel = '保持上限枚数';
+  static const String maintenanceMaxRecordCountUnit = '枚';
+  static const String maintenanceMaxRecordCountError =
+      '保持上限枚数は1以上の整数で入力してください';
+
+  /// テストデータ表示切替のスイッチ ラベル・説明文（成長記録・習慣化サポート共通）
+  static const String maintenanceUseTestDataLabel = 'テストデータ表示';
+  static const String maintenanceUseTestDataOnDesc =
+      'ON（テストデータを表示する）';
+  static const String maintenanceUseTestDataOffDesc = 'OFF（実データを表示する）';
+
+  /// セクション見出し：習慣化サポート関連の設定
+  static const String maintenanceHabitSectionTitle = '習慣化サポート';
+
+  /// 登録件数表示切替のスイッチ ラベル・説明文
+  static const String maintenanceShowDebugDataCountLabel = '登録件数表示';
+  static const String maintenanceShowDebugDataCountOnDesc =
+      'ON（継続カレンダー下に登録件数を表示する）';
+  static const String maintenanceShowDebugDataCountOffDesc = 'OFF（表示しない）';
+
+  /// セクション見出し：テストデータ生成条件（成長記録・習慣化サポート共通）
+  static const String maintenanceTestDataSectionTitle = 'テストデータ生成条件';
+  static const String maintenanceTestDataStartDateLabel = '開始日';
+  static const String maintenanceTestDataEndDateLabel = '終了日';
+  static const String maintenanceTestDataCountPerDayLabel = '1日あたり枚数';
+  static const String maintenanceTestDataMinutesLabel = '1件あたりの所要時間';
+  static const String maintenanceTestDataCountUnit = '枚';
+  static const String maintenanceTestDataMinutesUnit = '分';
+  static const String maintenanceTestDataRangeError =
+      '開始日は終了日と同じか、それより前の日付にしてください';
+  static const String maintenanceTestDataCountError =
+      '1日あたり枚数は1以上の整数で入力してください';
+  static const String maintenanceTestDataMinutesError =
+      '所要時間は1以上の整数で入力してください';
+
   /// 画面下部の反映ボタン（選択中の内容を実際の動作に反映する）
   static const String maintenanceApplyButton = '決定';
+
+  /// 「決定」で反映が完了した直後に表示するメッセージ
+  static const String maintenanceApplyDone = '設定を反映しました';
 
   /// AppBarの「初期状態に戻す」アイコンのツールチップ・確認ダイアログ
   static const String maintenanceResetTitle = '初期状態に戻す';

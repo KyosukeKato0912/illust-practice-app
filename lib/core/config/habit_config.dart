@@ -74,18 +74,31 @@ abstract class HabitConfig {
   // ══════════════════════════════════════════════════════════
 
   /// 【検証用】継続カレンダーの下に、現在登録されている件数
-  /// （データ総数・記録のある日数）を表示するかどうか。
-  /// ⚠ リリース時は必ず false にすること。
+  /// （データ総数・記録のある日数）を表示するかどうか（リリース時の
+  /// 初期値）。
+  ///
+  /// ⚠ 実際に使われる値は、この定数そのものではなく
+  ///   [habitShowDebugDataCountProvider]
+  ///   （features/habit/state/habit_practice_provider.dart）経由の値。
+  ///   メンテナンス画面から検証用に切り替えられるようにするため、
+  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
+  ///   必ずこの定数の値（false）へ戻る。
   static const bool showDebugDataCount = false;
 
   /// 【検証用】習慣化サポートの継続カレンダーを、実データ
   /// （growthProvider）の代わりに shared/testdata/growth_testdata.dart
-  /// のテストデータで表示するかどうか。
+  /// のテストデータで表示するかどうか（リリース時の初期値）。
   ///
   /// GrowthConfig.useTestData とは独立して切替できる
   /// （例：成長記録メイン画面は実データのまま、習慣化サポート側だけ
   /// テストデータで継続カレンダーの配色を確認する、といった使い方を
   /// 想定）。
-  /// ⚠ リリース時は必ず false にすること。
+  ///
+  /// ⚠ 実際に使われる値は、この定数そのものではなく
+  ///   [habitUseTestDataProvider]
+  ///   （features/habit/state/habit_practice_provider.dart）経由の値。
+  ///   メンテナンス画面から検証用に切り替えられるようにするため、
+  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
+  ///   必ずこの定数の値（false）へ戻る。
   static const bool useTestData = false;
 }

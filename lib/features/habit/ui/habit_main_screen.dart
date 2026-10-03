@@ -210,7 +210,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 継続カレンダーの元データ（HabitConfig.useTestData に応じて実データ／
+    // 継続カレンダーの元データ（habitUseTestDataProvider に応じて実データ／
     // テストデータを切替）は habit_practice_provider.dart に集約している。
     // 復帰促進通知の最終練習日と常に同じ元データを参照するため、
     // ここでは直接分岐しない。
@@ -362,7 +362,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
                 const SizedBox(height: 32),
 
                 // ── 【検証用】登録件数表示 ────────────────────
-                if (HabitConfig.showDebugDataCount) ...[
+                if (ref.watch(habitShowDebugDataCountProvider)) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -434,7 +434,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
 // ══════════════════════════════════════════════════════════
 // 【検証用】登録件数チップ
 //
-// HabitConfig.showDebugDataCount が true の間のみ表示される。
+// habitShowDebugDataCountProvider が true の間のみ表示される。
 // ══════════════════════════════════════════════════════════
 class _DebugCountChip extends StatelessWidget {
   final String label;
