@@ -23,13 +23,13 @@ abstract class GrowthConfig {
   /// どうか（リリース時の初期値）。
   ///
   /// ⚠ 実際に使われる値は、この定数そのものではなく
-  ///   [growthUseTestDataProvider]
+  ///   [growthDataSourceModeProvider]
   ///   （features/growth/state/growth_practice_log_provider.dart）経由の
-  ///   値。メンテナンス画面から検証用に切り替えられるようにするため、
-  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
-  ///   必ずこの定数の値（false）へ戻る。
+  ///   値（real/test/merged の3値）。メンテナンス画面から検証用に
+  ///   切り替えられるようにするため、このProviderは初期値として
+  ///   この定数（false→real）を使い、アプリ起動のたびに必ずその値へ戻る。
   /// habit_main_screen.dart 側の表示切替は HabitConfig.useTestData
-  /// （実際には habitUseTestDataProvider）で独立して管理しており、
+  /// （実際には habitDataSourceModeProvider）で独立して管理しており、
   /// 本フラグとは連動しない。
   static const bool useTestData = false;
 

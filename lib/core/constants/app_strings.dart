@@ -141,13 +141,13 @@ abstract class AppStrings {
   static const String habitCountUpResetDialogCancel = 'キャンセル';
 
   // 設定画面
-  static const String habitSettingsTitle         = '習慣化サポート設定';
-  static const String habitSettingsModeTitle     = '⏱ メリハリタイマーセット';
-  static const String habitSettingsTimerTitle    = '⏱ 作業時間';
-  static const String habitSettingsBreakTitle    = '☕ 休憩時間';
-  static const String habitSettingsSaveButton    = '保存';
+  static const String habitSettingsTitle = '習慣化サポート設定';
+  static const String habitSettingsModeTitle = '⏱ メリハリタイマーセット';
+  static const String habitSettingsTimerTitle = '⏱ 作業時間';
+  static const String habitSettingsBreakTitle = '☕ 休憩時間';
+  static const String habitSettingsSaveButton = '保存';
   static const String habitSettingsSaveAndStartButton = '保存して開始';
-  static const String habitSettingsSaved         = '設定を保存しました';
+  static const String habitSettingsSaved = '設定を保存しました';
 
   // メリハリタイマーセット選択
   static const String habitModePreset = '基本セット';
@@ -156,28 +156,27 @@ abstract class AppStrings {
   static const String habitCustomDesc = '作業時間と休憩時間を自由に設定';
 
   // 作業開始促進通知
-  static const String habitReminderSectionTitle  = '🔔 作業開始促進通知';
-  static const String habitReminderEnabledLabel  = '毎日通知を受け取る';
-  static const String habitReminderEnabledDesc   = '設定した時刻に作業開始をお知らせします';
-  static const String habitReminderDisabledDesc  = '通知はオフです';
-  static const String habitReminderTimeLabel     = '通知時刻';
+  static const String habitReminderSectionTitle = '🔔 作業開始促進通知';
+  static const String habitReminderEnabledLabel = '毎日通知を受け取る';
+  static const String habitReminderEnabledDesc = '設定した時刻に作業開始をお知らせします';
+  static const String habitReminderDisabledDesc = '通知はオフです';
+  static const String habitReminderTimeLabel = '通知時刻';
 
   // 復帰促進通知
-  static const String habitComebackSectionTitle   = '📅 復帰促進通知';
-  static const String habitComebackEnabledLabel   = '復帰促進通知を受け取る';
-  static const String habitComebackEnabledDesc    = '練習が空いたときにお知らせします';
-  static const String habitComebackDisabledDesc   = '通知はオフです';
-  static const String habitComebackPeriodLabel    = '通知するまでの期間';
+  static const String habitComebackSectionTitle = '📅 復帰促進通知';
+  static const String habitComebackEnabledLabel = '復帰促進通知を受け取る';
+  static const String habitComebackEnabledDesc = '練習が空いたときにお知らせします';
+  static const String habitComebackDisabledDesc = '通知はオフです';
+  static const String habitComebackPeriodLabel = '通知するまでの期間';
 
   // リセット
-  static const String habitSettingsResetTitle   = '設定を初期値に戻す';
+  static const String habitSettingsResetTitle = '設定を初期値に戻す';
   static const String habitSettingsResetMessage = 'すべての設定をデフォルト値に戻します。よろしいですか？';
-  static const String habitSettingsReset        = '設定を初期値に戻しました';
+  static const String habitSettingsReset = '設定を初期値に戻しました';
 
   // ── 習慣化サポート：正確なアラーム権限の案内ダイアログ ──
   static const String habitExactAlarmDialogTitle = 'アラーム権限が必要です';
-  static const String habitExactAlarmDialogMessage =
-      '設定した時刻ちょうどに作業開始通知を届けるため、'
+  static const String habitExactAlarmDialogMessage = '設定した時刻ちょうどに作業開始通知を届けるため、'
       '「アラームとリマインダー」の権限を有効にしてください。\n\n'
       '「設定を開く」を押したあと、一覧からこのアプリを選んで'
       'スイッチをONにしてください。\n\n'
@@ -193,16 +192,20 @@ abstract class AppStrings {
   static const String notificationReminderChannelDesc = '毎日の作業開始を促す通知';
 
   static const String notificationWorkFinishedTitle = '作業終了 — 休憩を始めましょう';
-  static const String notificationWorkFinishedMessage = '設定時間が経過しました。少し休憩しましょう！';
+  static const String notificationWorkFinishedMessage =
+      '設定時間が経過しました。少し休憩しましょう！';
   static const String notificationBreakFinishedTitle = '休憩終了 — 作業を再開しましょう';
-  static const String notificationBreakFinishedMessage = '休憩時間が終わりました。また頑張りましょう！';
+  static const String notificationBreakFinishedMessage =
+      '休憩時間が終わりました。また頑張りましょう！';
   static const String notificationReminderTitle = '今日も練習しましょう！';
-  static const String notificationReminderMessage = 'イラスト練習の時間です。少しずつ続けることが上達への近道です🎨';
+  static const String notificationReminderMessage =
+      'イラスト練習の時間です。少しずつ続けることが上達への近道です🎨';
   static const String notificationComebackTitle = 'しばらく練習が空いていますよ！';
-  static const String notificationComebackMessage = 'また少しずつ練習を再開しませんか？あなたのペースで大丈夫です🎨';
+  static const String notificationComebackMessage =
+      'また少しずつ練習を再開しませんか？あなたのペースで大丈夫です🎨';
 
   // メリハリタイマー フェーズラベル
-  static const String habitPhaseWork  = '作業中';
+  static const String habitPhaseWork = '作業中';
   static const String habitPhaseBreak = '休憩中';
 
   // 継続カレンダー
@@ -217,7 +220,13 @@ abstract class AppStrings {
 
   // カレンダー 曜日ラベル（月曜始まり）
   static const List<String> habitWeekdays = [
-    '月', '火', '水', '木', '金', '土', '日',
+    '月',
+    '火',
+    '水',
+    '木',
+    '金',
+    '土',
+    '日',
   ];
 
   // ── 成長記録 ────────────────────────────────────────────
@@ -241,7 +250,8 @@ abstract class AppStrings {
   static const String growthSelectionCountSuffix = '件選択中';
 
   static const String growthDeleteDialogTitle = '削除しますか？';
-  static const String growthDeleteDialogMessageSuffix = '件の画像を削除します。この操作は取り消せません。';
+  static const String growthDeleteDialogMessageSuffix =
+      '件の画像を削除します。この操作は取り消せません。';
   static const String growthDeleteDialogCancel = 'キャンセル';
   static const String growthDeleteDialogConfirm = '削除';
 
@@ -358,7 +368,13 @@ abstract class AppStrings {
 
   // カレンダー 曜日ラベル（月曜始まり）
   static const List<String> growthWeekdays = [
-    '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日',
+    '月曜日',
+    '火曜日',
+    '水曜日',
+    '木曜日',
+    '金曜日',
+    '土曜日',
+    '日曜日',
   ];
 
   // ── 未実装画面 ──────────────────────────────────────────
@@ -403,20 +419,23 @@ abstract class AppStrings {
   static const String maintenanceMaxCountReachedLabel = '保持上限到達フラグ';
   static const String maintenanceMaxCountReachedOnDesc =
       'ON（保持上限に到達済みの状態として動作する）';
-  static const String maintenanceMaxCountReachedOffDesc =
-      'OFF（未到達の状態として動作する）';
+  static const String maintenanceMaxCountReachedOffDesc = 'OFF（未到達の状態として動作する）';
 
   /// 保持上限枚数の入力欄 ラベル・単位・入力エラー
   static const String maintenanceMaxRecordCountLabel = '保持上限枚数';
   static const String maintenanceMaxRecordCountUnit = '枚';
-  static const String maintenanceMaxRecordCountError =
-      '保持上限枚数は1以上の整数で入力してください';
+  static const String maintenanceMaxRecordCountError = '保持上限枚数は1以上の整数で入力してください';
 
-  /// テストデータ表示切替のスイッチ ラベル・説明文（成長記録・習慣化サポート共通）
-  static const String maintenanceUseTestDataLabel = 'テストデータ表示';
-  static const String maintenanceUseTestDataOnDesc =
-      'ON（テストデータを表示する）';
-  static const String maintenanceUseTestDataOffDesc = 'OFF（実データを表示する）';
+  /// データソース切替（実データ／テストデータ／併用）
+  /// ラベル・3択それぞれの表記（成長記録・習慣化サポート共通）
+  static const String maintenanceDataSourceLabel = 'データソース';
+  static const String maintenanceDataSourceRealLabel = '実データ';
+  static const String maintenanceDataSourceTestLabel = 'テストデータ';
+  static const String maintenanceDataSourceMergedLabel = '併用';
+  static const String maintenanceDataSourceMergedDesc =
+      '併用：テストデータと実データを日付ごとに合算して扱う'
+      '（例：テストデータで過去分を作り、今日は実際にアップロードして'
+      '継続日数の挙動を確認する、といった検証に使う）';
 
   /// セクション見出し：習慣化サポート関連の設定
   static const String maintenanceHabitSectionTitle = '習慣化サポート';
@@ -437,10 +456,8 @@ abstract class AppStrings {
   static const String maintenanceTestDataMinutesUnit = '分';
   static const String maintenanceTestDataRangeError =
       '開始日は終了日と同じか、それより前の日付にしてください';
-  static const String maintenanceTestDataCountError =
-      '1日あたり枚数は1以上の整数で入力してください';
-  static const String maintenanceTestDataMinutesError =
-      '所要時間は1以上の整数で入力してください';
+  static const String maintenanceTestDataCountError = '1日あたり枚数は1以上の整数で入力してください';
+  static const String maintenanceTestDataMinutesError = '所要時間は1以上の整数で入力してください';
 
   /// 画面下部の反映ボタン（選択中の内容を実際の動作に反映する）
   static const String maintenanceApplyButton = '決定';
@@ -453,4 +470,26 @@ abstract class AppStrings {
   static const String maintenanceResetMessage =
       '画面上の全ての設定を初期状態（リリース時の設定値）に戻し、即座に反映します。よろしいですか？';
   static const String maintenanceResetDone = '初期状態に戻しました';
+
+  // ── お題ジェネレーター ──────────────────────
+  static const String topicHistoryTitle = 'お題履歴';
+
+  /// お題エリア：お題未生成時のプレースホルダー文言
+  static const String topicAreaEmptyMessage = 'まだお題がありません';
+  static const String topicAreaEmptyHint = '下の「ランダム」または1〜3を選んで「決定」でお題を生成します';
+
+  static const String topicCopyButton = 'コピー';
+
+  /// コピーボタン押下時に表示するスナックバーの文言
+  static const String topicCopyDone = 'お題をコピーしました';
+  static const String topicSelector1Label = '1.シチュエーションやキャラクター、ポーズなど';
+  static const String topicSelector2Label = '2.構図や部位など';
+  static const String topicSelector3Label = '3.制限時間や完成度など';
+  static const String topicHistoryButton = '履歴';
+  static const String topicRandomButton = 'ランダム';
+
+  /// お題履歴画面：履歴が1件もない場合の空状態
+  static const String topicHistoryEmptyMessage = 'まだお題の履歴がありません';
+  static const String topicHistoryEmptyHint =
+      'お題ジェネレーターでお題を生成すると、ここに履歴が残ります（最新10件）';
 }

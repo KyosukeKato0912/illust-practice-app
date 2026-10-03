@@ -15,6 +15,8 @@ import '../../features/habit/ui/habit_settings_screen.dart';
 import '../../features/habit/ui/habit_timer_screen.dart';
 import '../../features/home/ui/home_screen.dart';
 import '../../features/maintenance/ui/maintenance_screen.dart';
+import '../../features/topic_generator/ui/topic_history_screen.dart';
+import '../../features/topic_generator/ui/topic_main_screen.dart';
 import '../../shared/patterns/full_image_screen.dart';
 
 // ══════════════════════════════════════════════════════════
@@ -154,7 +156,20 @@ abstract class AppRouter {
         ),
       );
 
+  /// お題ジェネレーター メイン画面へのルート
+  static Route<void> topic() => MaterialPageRoute(
+        builder: (_) => const TopicMainScreen(),
+      );
+
+  /// お題履歴画面へのルート
+  ///
+  /// [TopicMainScreen] から呼び出す。選択したお題を Navigator.pop の
+  /// 戻り値（String）として返す。未選択のまま戻るボタンで戻った場合は
+  /// null が返る。
+  static Route<String?> topicHistory() => MaterialPageRoute(
+        builder: (_) => const TopicHistoryScreen(),
+      );
+
   // ── 将来実装予定 ─────────────────────────────────────────
-  // static Route<void> topic()     => MaterialPageRoute(builder: (_) => const TopicMainScreen());
   // static Route<void> proLesson() => MaterialPageRoute(builder: (_) => const ProLessonSelectScreen());
 }

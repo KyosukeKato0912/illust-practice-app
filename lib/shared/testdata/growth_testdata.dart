@@ -14,10 +14,12 @@ import '../../features/growth/domain/growth_record.dart';
 //
 // 参照側：
 //   ・features/growth/state/growth_provider.dart
-//     （growthUseTestDataProvider が true の間、Hiveの代わりにこちらを使う）
+//     （growthDataSourceModeProvider が test/merged の間、Hiveの代わりに
+//       （mergedの場合はHiveと合わせて）こちらを使う）
 //   ・features/habit/ui/habit_main_screen.dart
-//     （habitUseTestDataProvider が true の間、growthProviderの代わりに
-//       こちらを直接参照する。growth側の設定とは独立して切替可能）
+//     （habitDataSourceModeProvider が test/merged の間、growthProviderの
+//       代わりに（mergedの場合は合わせて）こちらを直接参照する。growth側
+//       の設定とは独立して切替可能）
 //
 // ── ダミー画像について ──────────────────────────────────
 // GrowthRecord.imagePath は「端末ローカルの実ファイルパス」を前提と

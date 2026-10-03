@@ -210,8 +210,9 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 継続カレンダーの元データ（habitUseTestDataProvider に応じて実データ／
-    // テストデータを切替）は habit_practice_provider.dart に集約している。
+    // 継続カレンダーの元データ（habitDataSourceModeProvider に応じて
+    // 実データ／テストデータ／併用を切替）は habit_practice_provider.dart
+    // に集約している。
     // 復帰促進通知の最終練習日と常に同じ元データを参照するため、
     // ここでは直接分岐しない。
     final allDays = ref.watch(habitPracticeDaysProvider);

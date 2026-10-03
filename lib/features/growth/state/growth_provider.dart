@@ -138,10 +138,12 @@ final growthMaxRecordCountProvider =
 //   ・上限到達時は growthMaxCountReachedProvider の state も更新し、
 //     PDFダウンロードボタンの表示条件（フラグが立っている間のみ表示）
 //     に反映する
-//   ・growthUseTestDataProvider が true の間は [_loadAll]（初期読み込み・
-//     追加/削除後の再読込のいずれも）が shared/testdata/growth_testdata.dart
-//     のテストデータを返す。アップロード自体は通常どおりHiveに保存
-//     されるが、直後の _loadAll でテストデータに上書き表示される点に注意
+//   ・growthDataSourceModeProvider が test/merged の間は [_loadAll]（初期
+//     読み込み・追加/削除後の再読込のいずれも）が
+//     shared/testdata/growth_testdata.dart のテストデータを（mergedの
+//     場合は実データと合わせて）返す。アップロード自体は通常どおり
+//     Hiveに保存されるが、直後の _loadAll でテストデータ（実データとの
+//     合算を含む）に上書き表示される点に注意
 //     （テストデータ表示中は常に同じ内容を見せる一貫性を優先した設計）。
 // ══════════════════════════════════════════════════════════
 class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
@@ -156,9 +158,20 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   }
 
   Future<void> _loadAll() async {
-    state = _ref.read(growthUseTestDataProvider)
-        ? await _ref.read(growthTestDataProvider.future)
-        : await _repository.getAll();
+    final mode = _ref.read(growthDataSourceModeProvider);
+    switch (mode) {
+      case GrowthDataSourceMode.real:
+        state = await _repository.getAll();
+        break;
+      case GrowthDataSourceMode.test:
+        state = await _ref.read(growthTestDataProvider.future);
+        break;
+      case GrowthDataSourceMode.merged:
+        final testRecords = await _ref.read(growthTestDataProvider.future);
+        final realRecords = await _repository.getAll();
+        state = [...testRecords, ...realRecords];
+        break;
+    }
   }
 
   /// ギャラリーから画像を選択する（保存は行わない）。

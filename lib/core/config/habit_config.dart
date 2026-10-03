@@ -95,8 +95,9 @@ abstract class HabitConfig {
   /// 想定）。
   ///
   /// ⚠ 実際に使われる値は、この定数そのものではなく
-  ///   [habitUseTestDataProvider]
-  ///   （features/habit/state/habit_practice_provider.dart）経由の値。
+  ///   [habitDataSourceModeProvider]
+  ///   （features/habit/state/habit_practice_provider.dart）経由の値
+  ///   （real/test/merged の3値）。
   ///   メンテナンス画面から検証用に切り替えられるようにするため、
   ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
   ///   必ずこの定数の値（false）へ戻る。

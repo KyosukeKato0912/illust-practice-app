@@ -35,8 +35,7 @@ class HomeScreen extends StatelessWidget {
 
           return Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: outerPad, vertical: 24),
+              padding: EdgeInsets.symmetric(horizontal: outerPad, vertical: 24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -45,23 +44,21 @@ class HomeScreen extends StatelessWidget {
                     label: AppStrings.featureDrawing,
                     color: AppColors.theme,
                     enabled: AppConfig.featureXSecDrawing,
-                    onTap: () =>
-                        Navigator.push(context, AppRouter.drawing()),
+                    onTap: () => Navigator.push(context, AppRouter.drawing()),
                   ),
                   const SizedBox(height: 12),
                   _FeatureNavButton(
                     label: AppStrings.featureTopic,
-                    color: AppColors.topicGenerator,
+                    color: AppColors.theme,
                     enabled: AppConfig.featureTopicGenerator,
-                    onTap: () {}, // TODO: AppRouter.topic() に差し替える
+                    onTap: () => Navigator.push(context, AppRouter.topic()),
                   ),
                   const SizedBox(height: 12),
                   _FeatureNavButton(
                     label: AppStrings.featureGrowth,
                     color: AppColors.theme,
                     enabled: AppConfig.featureGrowthRecord,
-                    onTap: () =>
-                        Navigator.push(context, AppRouter.growth()),
+                    onTap: () => Navigator.push(context, AppRouter.growth()),
                   ),
                   const SizedBox(height: 12),
                   _FeatureNavButton(
@@ -120,13 +117,10 @@ class _FeatureNavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-            enabled ? color : AppColors.disabled,
-        foregroundColor:
-            enabled ? Colors.white : AppColors.disabledText,
+        backgroundColor: enabled ? color : AppColors.disabled,
+        foregroundColor: enabled ? Colors.white : AppColors.disabledText,
         padding: const EdgeInsets.symmetric(vertical: 32),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: enabled ? 2 : 0,
       ),
       onPressed: enabled ? onTap : null,

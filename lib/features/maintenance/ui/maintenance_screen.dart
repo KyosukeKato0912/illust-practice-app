@@ -42,10 +42,14 @@ import '../../habit/state/habit_practice_provider.dart';
 //      入力欄は画面を開くたびに必ず GrowthConfig.maxRecordCount
 //      （リリース時の初期値＝300）から始まる。実際に判定・自動削除に
 //      使われている現在値も同様に別途表示する。
-//   3. 成長記録：テストデータ表示（growthUseTestDataProvider経由）。
-//   4. 習慣化サポート：テストデータ表示（habitUseTestDataProvider経由）。
-//      3・4とも、スイッチは画面を開くたびに必ずfalse（実データ表示）
-//      から始まる。
+//   3. 成長記録：データソース（growthDataSourceModeProvider経由、
+//      実データ／テストデータ／併用の3択）。
+//   4. 習慣化サポート：データソース（habitDataSourceModeProvider経由、
+//      同3択）。
+//      3・4とも、画面を開くたびに必ず「実データ」から始まる。
+//      「併用」はテストデータと実データを日付ごとに合算して扱うモード
+//      （例：テストデータで過去分を作り、今日は実際にアップロードして
+//      継続日数マイルストーンの挙動を確認する、といった検証に使う）。
 //   5. テストデータ生成条件（growthTestDataConfigProvider経由、
 //      成長記録・習慣化サポート共通）。開始日・終了日・1日あたり枚数・
 //      1件あたりの所要時間を指定する。入力欄は画面を開くたびに必ず
@@ -58,6 +62,17 @@ import '../../habit/state/habit_practice_provider.dart';
 // 増やし、_decide() / _resetToDefault() にそれぞれの反映・初期化処理を
 // 追記していく。
 // ══════════════════════════════════════════════════════════
+String _dataSourceModeLabel(GrowthDataSourceMode mode) {
+  switch (mode) {
+    case GrowthDataSourceMode.real:
+      return AppStrings.maintenanceDataSourceRealLabel;
+    case GrowthDataSourceMode.test:
+      return AppStrings.maintenanceDataSourceTestLabel;
+    case GrowthDataSourceMode.merged:
+      return AppStrings.maintenanceDataSourceMergedLabel;
+  }
+}
+
 class MaintenanceScreen extends ConsumerStatefulWidget {
   const MaintenanceScreen({super.key});
 
@@ -80,11 +95,11 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   late final TextEditingController _maxRecordCountController =
       TextEditingController(text: '${GrowthConfig.maxRecordCount}');
 
-  // ── 成長記録／習慣化サポート：テストデータ表示（画面上の未反映の
-  //    選択値）── 画面を開くたびに必ず false（リリース時の初期値）
-  // から始める。
-  bool _growthUseTestData = false;
-  bool _habitUseTestData = false;
+  // ── 成長記録／習慣化サポート：データソース（実データ／テストデータ／
+  //    併用、画面上の未反映の選択値）── 画面を開くたびに必ず real
+  // （リリース時の初期値）から始める。
+  GrowthDataSourceMode _growthDataSourceMode = GrowthDataSourceMode.real;
+  GrowthDataSourceMode _habitDataSourceMode = GrowthDataSourceMode.real;
   bool _habitShowDebugDataCount = false;
 
   // ── テストデータ生成条件（画面上の未反映の選択値）──
@@ -190,8 +205,12 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
         .read(growthProvider.notifier)
         .setMaxCountReachedFlagForDebug(_maxCountReached);
     ref.read(growthMaxRecordCountProvider.notifier).setValue(maxRecordCount);
-    ref.read(growthUseTestDataProvider.notifier).setValue(_growthUseTestData);
-    ref.read(habitUseTestDataProvider.notifier).setValue(_habitUseTestData);
+    ref
+        .read(growthDataSourceModeProvider.notifier)
+        .setValue(_growthDataSourceMode);
+    ref
+        .read(habitDataSourceModeProvider.notifier)
+        .setValue(_habitDataSourceMode);
     ref
         .read(habitShowDebugDataCountProvider.notifier)
         .setValue(_habitShowDebugDataCount);
@@ -229,8 +248,8 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
     setState(() {
       _maxCountReached = false;
       _maxRecordCountController.text = '${GrowthConfig.maxRecordCount}';
-      _growthUseTestData = false;
-      _habitUseTestData = false;
+      _growthDataSourceMode = GrowthDataSourceMode.real;
+      _habitDataSourceMode = GrowthDataSourceMode.real;
       _habitShowDebugDataCount = false;
       final defaults = GrowthTestDataConfig.initial();
       _testDataStartDate = defaults.startDate;
@@ -242,8 +261,8 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
         .read(growthProvider.notifier)
         .setMaxCountReachedFlagForDebug(false);
     ref.read(growthMaxRecordCountProvider.notifier).resetToDefault();
-    ref.read(growthUseTestDataProvider.notifier).resetToDefault();
-    ref.read(habitUseTestDataProvider.notifier).resetToDefault();
+    ref.read(growthDataSourceModeProvider.notifier).resetToDefault();
+    ref.read(habitDataSourceModeProvider.notifier).resetToDefault();
     ref.read(habitShowDebugDataCountProvider.notifier).resetToDefault();
     ref.read(growthTestDataConfigProvider.notifier).resetToDefault();
     if (!mounted) return;
@@ -259,8 +278,9 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
     // そのまま表示する。
     final currentMaxCountReached = ref.watch(growthMaxCountReachedProvider);
     final currentMaxRecordCount = ref.watch(growthMaxRecordCountProvider);
-    final currentGrowthUseTestData = ref.watch(growthUseTestDataProvider);
-    final currentHabitUseTestData = ref.watch(habitUseTestDataProvider);
+    final currentGrowthDataSourceMode =
+        ref.watch(growthDataSourceModeProvider);
+    final currentHabitDataSourceMode = ref.watch(habitDataSourceModeProvider);
     final currentHabitShowDebugDataCount =
         ref.watch(habitShowDebugDataCountProvider);
     final currentTestDataConfig = ref.watch(growthTestDataConfigProvider);
@@ -355,31 +375,18 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                       ),
                       const Divider(height: 28),
 
-                      // ── テストデータ表示 ──
+                      // ── データソース（実データ／テストデータ／併用） ──
                       _CurrentValueRow(
-                        value: currentGrowthUseTestData
-                            ? AppStrings.maintenanceOnLabel
-                            : AppStrings.maintenanceOffLabel,
-                        highlighted: currentGrowthUseTestData,
+                        value: _dataSourceModeLabel(currentGrowthDataSourceMode),
+                        highlighted:
+                            currentGrowthDataSourceMode !=
+                                GrowthDataSourceMode.real,
                       ),
-                      const Divider(height: 20),
-                      SwitchListTile(
-                        value: _growthUseTestData,
-                        activeColor: AppColors.theme,
-                        contentPadding: EdgeInsets.zero,
+                      const SizedBox(height: 8),
+                      _DataSourceModeSelector(
+                        value: _growthDataSourceMode,
                         onChanged: (v) =>
-                            setState(() => _growthUseTestData = v),
-                        title: Text(
-                          AppStrings.maintenanceUseTestDataLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          _growthUseTestData
-                              ? AppStrings.maintenanceUseTestDataOnDesc
-                              : AppStrings.maintenanceUseTestDataOffDesc,
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
-                        ),
+                            setState(() => _growthDataSourceMode = v),
                       ),
                     ],
                   ),
@@ -392,31 +399,18 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── テストデータ表示 ──
+                      // ── データソース（実データ／テストデータ／併用） ──
                       _CurrentValueRow(
-                        value: currentHabitUseTestData
-                            ? AppStrings.maintenanceOnLabel
-                            : AppStrings.maintenanceOffLabel,
-                        highlighted: currentHabitUseTestData,
+                        value: _dataSourceModeLabel(currentHabitDataSourceMode),
+                        highlighted:
+                            currentHabitDataSourceMode !=
+                                GrowthDataSourceMode.real,
                       ),
-                      const Divider(height: 20),
-                      SwitchListTile(
-                        value: _habitUseTestData,
-                        activeColor: AppColors.theme,
-                        contentPadding: EdgeInsets.zero,
+                      const SizedBox(height: 8),
+                      _DataSourceModeSelector(
+                        value: _habitDataSourceMode,
                         onChanged: (v) =>
-                            setState(() => _habitUseTestData = v),
-                        title: Text(
-                          AppStrings.maintenanceUseTestDataLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          _habitUseTestData
-                              ? AppStrings.maintenanceUseTestDataOnDesc
-                              : AppStrings.maintenanceUseTestDataOffDesc,
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
-                        ),
+                            setState(() => _habitDataSourceMode = v),
                       ),
                       const Divider(height: 28),
 
@@ -573,6 +567,64 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// データソース3択（実データ／テストデータ／併用）セレクター
+// 「併用」選択時は、下に補足説明を表示する。
+// ══════════════════════════════════════════════════════════
+class _DataSourceModeSelector extends StatelessWidget {
+  final GrowthDataSourceMode value;
+  final ValueChanged<GrowthDataSourceMode> onChanged;
+
+  const _DataSourceModeSelector({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppStrings.maintenanceDataSourceLabel,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<GrowthDataSourceMode>(
+          segments: [
+            ButtonSegment(
+              value: GrowthDataSourceMode.real,
+              label: Text(AppStrings.maintenanceDataSourceRealLabel),
+            ),
+            ButtonSegment(
+              value: GrowthDataSourceMode.test,
+              label: Text(AppStrings.maintenanceDataSourceTestLabel),
+            ),
+            ButtonSegment(
+              value: GrowthDataSourceMode.merged,
+              label: Text(AppStrings.maintenanceDataSourceMergedLabel),
+            ),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) => onChanged(selection.first),
+          style: SegmentedButton.styleFrom(
+            selectedBackgroundColor: AppColors.theme,
+            selectedForegroundColor: Colors.white,
+          ),
+        ),
+        if (value == GrowthDataSourceMode.merged) ...[
+          const SizedBox(height: 8),
+          Text(
+            AppStrings.maintenanceDataSourceMergedDesc,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ],
     );
   }
 }
