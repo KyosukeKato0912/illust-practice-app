@@ -141,6 +141,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         AppRouter.growthUploadComplete(
           isMaxCountReached: uploadResult.isMaxCountReached,
           isStreakMilestoneReached: uploadResult.isStreakMilestoneReached,
+          showFlowerFadeIn: uploadResult.showFlowerFadeIn,
+          showColorFadeIn: uploadResult.showColorFadeIn,
+          showMessageFadeIn: uploadResult.showMessageFadeIn,
+          showPdfButtonFadeIn: uploadResult.showPdfButtonFadeIn,
         ),
       );
     } catch (_) {

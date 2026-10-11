@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/habit_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/app_values.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/growth_pdf_service.dart';
 import '../../../core/utils/date_utils.dart';
 import '../domain/growth_record.dart';
+import '../domain/growth_streak_utils.dart';
 import '../state/growth_practice_log_provider.dart';
 import '../state/growth_provider.dart';
 
@@ -41,10 +41,22 @@ class UploadCompleteScreen extends ConsumerStatefulWidget {
   final bool isMaxCountReached;
   final bool isStreakMilestoneReached;
 
+  // ── 演出アニメーション（フェードイン）の発生条件 ─────────
+  // いずれも GrowthNotifier.confirmUpload の戻り値をそのまま渡す。
+  // 詳細な判定ロジックはそちら側のdocコメントを参照。
+  final bool showFlowerFadeIn;
+  final bool showColorFadeIn;
+  final bool showMessageFadeIn;
+  final bool showPdfButtonFadeIn;
+
   const UploadCompleteScreen({
     super.key,
     this.isMaxCountReached = false,
     this.isStreakMilestoneReached = false,
+    this.showFlowerFadeIn = false,
+    this.showColorFadeIn = false,
+    this.showMessageFadeIn = false,
+    this.showPdfButtonFadeIn = false,
   });
 
   @override
@@ -61,6 +73,74 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
   /// [widget.isMaxCountReached] が true の回（保持上限に初めて到達した
   /// アップロード完了時）のみ、本画面にもPDFボタンを表示する。
   bool _isGeneratingPdf = false;
+
+  // ── 演出アニメーション（花丸→色変け→メッセージ→PDFボタン） ──
+  // 4種類とも一律0.5秒のフェードイン。実際に発生する演出のみを
+  // この順番で積み上げてスケジュールする（発生しない段はスキップし、
+  // 待ち時間を詰める）。花丸・色変けは今日のセル（_GrowthDayCell）側で
+  // widget.showFlowerFadeIn／showColorFadeIn を見て自力でアニメーション
+  // するため、ここでは特別メッセージ・PDFボタンの開始タイミングのみを
+  // 管理する。
+  static const _fadeInMs = 500;
+
+  // 画面遷移アニメーション（ルートの出現）が完了してから演出を始める。
+  // 遷移中に始めると、序盤の花丸のフェードインが見えなくなるため。
+  bool _animationStarted = false;
+
+  // アニメーション対象外（例：同じ日の2回目以降のアップロード）でも、
+  // 表示すべき内容自体は最初から見えている状態にする。
+  late bool _showMessage = !widget.showMessageFadeIn;
+  late bool _showPdfButton = !widget.showPdfButtonFadeIn;
+
+  @override
+  void initState() {
+    super.initState();
+    // ModalRoute.of は initState 内では使えないため、初回フレーム後に
+    // 遷移アニメーションの完了を待つ。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _waitForRouteTransition();
+    });
+  }
+
+  void _waitForRouteTransition() {
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation == null || animation.status == AnimationStatus.completed) {
+      _startFadeIns();
+      return;
+    }
+    void listener(AnimationStatus status) {
+      if (status == AnimationStatus.completed) {
+        animation.removeStatusListener(listener);
+        if (mounted) _startFadeIns();
+      }
+    }
+
+    animation.addStatusListener(listener);
+  }
+
+  /// 遷移完了後に呼ばれ、花丸・色変け（今日のセル側）の開始を知らせ、
+  /// 特別メッセージ・PDFボタンの表示タイミングをスケジュールする。
+  void _startFadeIns() {
+    var offsetMs = 0;
+    if (widget.showFlowerFadeIn) offsetMs += _fadeInMs;
+    if (widget.showColorFadeIn) offsetMs += _fadeInMs;
+    final messageStartMs = offsetMs;
+    if (widget.showMessageFadeIn) offsetMs += _fadeInMs;
+    final pdfButtonStartMs = offsetMs;
+
+    setState(() => _animationStarted = true);
+
+    if (widget.showMessageFadeIn) {
+      Future.delayed(Duration(milliseconds: messageStartMs), () {
+        if (mounted) setState(() => _showMessage = true);
+      });
+    }
+    if (widget.showPdfButtonFadeIn) {
+      Future.delayed(Duration(milliseconds: pdfButtonStartMs), () {
+        if (mounted) setState(() => _showPdfButton = true);
+      });
+    }
+  }
 
   void _toggleTooltip(String dateKey) {
     setState(() {
@@ -113,41 +193,14 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
     );
   }
 
-  // ── 指定日が属する連続記録区間の「総日数」を計算する ────
-  // 習慣化サポートの継続カレンダー（habit_main_screen.dart）と
-  // 同じアルゴリズム。指定日自体に記録がない場合は 0 を返す。
-  int _streakSpanAt(DateTime date, Set<String> recordedDateKeys) {
-    final key = AppDateUtils.dateKey(date);
-    if (!recordedDateKeys.contains(key)) return 0;
+  // ── 指定日が属する連続記録区間の「総日数」／セル色 ──────
+  // ロジック本体は features/growth/domain/growth_streak_utils.dart に
+  // 集約している（GrowthNotifier側でも演出判定に使うため）。
+  int _streakSpanAt(DateTime date, Set<String> recordedDateKeys) =>
+      GrowthStreakUtils.spanAt(date, recordedDateKeys);
 
-    int backCount = 0;
-    DateTime cursor = date;
-    while (recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
-      backCount++;
-      cursor = cursor.subtract(const Duration(days: 1));
-    }
-
-    int forwardCount = 0;
-    cursor = date.add(const Duration(days: 1));
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    while (!cursor.isAfter(todayDate) &&
-        recordedDateKeys.contains(AppDateUtils.dateKey(cursor))) {
-      forwardCount++;
-      cursor = cursor.add(const Duration(days: 1));
-    }
-
-    return backCount + forwardCount;
-  }
-
-  Color _streakColor(DateTime date, Set<String> recordedDateKeys) {
-    final span = _streakSpanAt(date, recordedDateKeys);
-    if (span < 2) return Colors.white;
-    if (span < AppValues.growthStreakDarkThresholdDays) {
-      return AppColors.growthStreakLight;
-    }
-    return AppColors.growthStreakDark;
-  }
+  Color _streakColor(DateTime date, Set<String> recordedDateKeys) =>
+      GrowthStreakUtils.colorAt(date, recordedDateKeys);
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +233,33 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
     final recordedDateKeys = <String>{
       for (final d in practiceDays) AppDateUtils.dateKey(d.date),
     };
+
+    // ── 色変けアニメーションの開始色（色が実際に変わるセルのみ） ──
+    // 連続記録は区間全体が同じ色になるため、今日のセルだけでなく連続区間
+    // 内の他のセルも色が変わる（例：21日目に達すると、過去20日分も
+    // 薄い黄色→濃い黄色に変わる）。これらも今日のセルと一緒に
+    // アニメーションさせないと、最初から変わって見えてしまう。
+    // 「今回の保存前」の状態は、今日の記録を除いた集合で再計算して得る。
+    final previousColors = <String, Color>{};
+    if (widget.showColorFadeIn) {
+      final keysBeforeToday = {...recordedDateKeys}
+        ..remove(AppDateUtils.dateKey(now));
+      for (final week in weeks) {
+        for (final d in week) {
+          final key = AppDateUtils.dateKey(d);
+          if (!recordedDateKeys.contains(key)) continue;
+          // 今日のセルは「昨日時点の色」から（2日目＝白→薄い黄色、
+          // 21日目＝薄い黄色→濃い黄色）。他のセルは今日を除いた状態の色から。
+          final before = key == AppDateUtils.dateKey(now)
+              ? _streakColor(
+                  now.subtract(const Duration(days: 1)), keysBeforeToday)
+              : _streakColor(d, keysBeforeToday);
+          if (before != _streakColor(d, recordedDateKeys)) {
+            previousColors[key] = before;
+          }
+        }
+      }
+    }
 
     // 表示グリッド内（前月末・翌月頭を含む）の日付ごとの追加枚数
     final gridSet = <String>{
@@ -219,41 +299,49 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
               ),
               if (specialMessages.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
-                  specialMessage,
-                  style: const TextStyle(fontSize: 15),
-                  textAlign: TextAlign.center,
+                AnimatedOpacity(
+                  opacity: _showMessage ? 1 : 0,
+                  duration: const Duration(milliseconds: _fadeInMs),
+                  child: Text(
+                    specialMessage,
+                    style: const TextStyle(fontSize: 15),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
               if (widget.isMaxCountReached) ...[
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.theme,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    disabledForegroundColor: Colors.grey.shade500,
-                    minimumSize: const Size(double.infinity, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                AnimatedOpacity(
+                  opacity: _showPdfButton ? 1 : 0,
+                  duration: const Duration(milliseconds: _fadeInMs),
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.theme,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      disabledForegroundColor: Colors.grey.shade500,
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  onPressed:
-                      _isGeneratingPdf ? null : () => _onPdfTap(allRecords),
-                  icon: _isGeneratingPdf
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.picture_as_pdf_outlined, size: 20),
-                  label: const Text(
-                    AppStrings.growthUploadCompletePdfButton,
-                    style: TextStyle(fontSize: 16),
+                    onPressed:
+                        _isGeneratingPdf ? null : () => _onPdfTap(allRecords),
+                    icon: _isGeneratingPdf
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.picture_as_pdf_outlined, size: 20),
+                    label: const Text(
+                      AppStrings.growthUploadCompletePdfButton,
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ],
@@ -293,6 +381,11 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
                     for (final d in week)
                       AppDateUtils.dateKey(d): _streakColor(d, recordedDateKeys),
                 },
+                previousColors: previousColors,
+                todayAnimateFlower: widget.showFlowerFadeIn,
+                // 色変けは、花丸のフェードイン（0.5秒）が発生する場合はその後。
+                colorDelayMs: widget.showFlowerFadeIn ? _fadeInMs : 0,
+                startAnimation: _animationStarted,
                 todayKey: todayKey,
                 openTooltipKey: _openTooltipKey,
                 onToggleTooltip: _toggleTooltip,
@@ -364,6 +457,10 @@ class _GrowthMonthCalendar extends StatelessWidget {
   final int currentMonth; // 当月かどうかの判定用（1〜12）
   final Map<String, int> dailyCounts; // キー="yyyy-MM-dd", 値=その日の追加枚数
   final Map<String, Color> streakColors; // キー="yyyy-MM-dd", 値=セル背景色
+  final Map<String, Color> previousColors; // 色が変わるセルの開始色
+  final bool todayAnimateFlower;
+  final int colorDelayMs;
+  final bool startAnimation;
   final String todayKey;
   final String? openTooltipKey;
   final void Function(String dateKey) onToggleTooltip;
@@ -373,6 +470,10 @@ class _GrowthMonthCalendar extends StatelessWidget {
     required this.currentMonth,
     required this.dailyCounts,
     required this.streakColors,
+    required this.previousColors,
+    required this.todayAnimateFlower,
+    required this.colorDelayMs,
+    required this.startAnimation,
     required this.todayKey,
     required this.openTooltipKey,
     required this.onToggleTooltip,
@@ -417,6 +518,11 @@ class _GrowthMonthCalendar extends StatelessWidget {
                     hasRecord: count > 0,
                     count: count,
                     backgroundColor: streakColors[key] ?? Colors.white,
+                    previousColor: previousColors[key],
+                    animateFlower: key == todayKey && todayAnimateFlower,
+                    animateColor: previousColors.containsKey(key),
+                    colorDelayMs: colorDelayMs,
+                    startAnimation: startAnimation,
                     isToday: key == todayKey,
                     isOpen: openTooltipKey == key,
                     onTap: () => onToggleTooltip(key),
@@ -467,12 +573,26 @@ class _GrowthCalendarWeekdayCell extends StatelessWidget {
 // 呼び出し、どのセルの吹き出しを開くかを親で一元管理する。
 // 当月外の日付（前月末・翌月頭）は日付番号を淡色にして区別する。
 // ══════════════════════════════════════════════════════════
-class _GrowthDayCell extends StatelessWidget {
+class _GrowthDayCell extends StatefulWidget {
   final DateTime date;
   final bool isCurrentMonth;
   final bool hasRecord;
   final int count;
   final Color backgroundColor;
+  // 色変けアニメーションの開始色。色が実際に変わるセル（今日のセル＋
+  // 連続区間内の他のセル）にのみ渡される。nullの場合は色を静的に表示する。
+  final Color? previousColor;
+  // animateFlower は今日のセルのみtrueになりうる。false の場合は演出なしで
+  // そのまま最終状態（花丸は不透明度1・色は最終色）を表示する
+  // （例：同じ日の2回目以降のアップロード時）。
+  final bool animateFlower;
+  final bool animateColor;
+  // 色変けの開始までの待ち時間（花丸のフェードインがある場合はその後に
+  // なるよう、全セルで同じ値を渡して揃える）。
+  final int colorDelayMs;
+  // 演出の開始合図（画面遷移の完了後に true になる）。true になるまでは
+  // 演出開始前の状態（花丸は透明・色は昨日時点の色）で待機する。
+  final bool startAnimation;
   final bool isToday;
   final bool isOpen;
   final VoidCallback onTap;
@@ -483,20 +603,114 @@ class _GrowthDayCell extends StatelessWidget {
     required this.hasRecord,
     required this.count,
     required this.backgroundColor,
+    this.previousColor,
+    this.animateFlower = false,
+    this.animateColor = false,
+    this.colorDelayMs = 0,
+    this.startAnimation = false,
     required this.isToday,
     required this.isOpen,
     required this.onTap,
   });
 
   @override
+  State<_GrowthDayCell> createState() => _GrowthDayCellState();
+}
+
+// ── 今日のセルの演出アニメーション ──────────────────────
+// 花丸・色変けとも一律0.5秒のフェードイン。両方発生する場合は
+// 「花丸0.5秒 → 色変け0.5秒」の順（計1.0秒）、片方のみの場合は
+// その0.5秒のみ。どちらも発生しない場合は静的に最終状態を表示する。
+// 色変けは今日のセルだけでなく、色が変わる連続区間内の全セルが対象で、
+// いずれも同じタイミング（colorDelayMs後）に一緒に変化する。
+class _GrowthDayCellState extends State<_GrowthDayCell>
+    with SingleTickerProviderStateMixin {
+  bool get _animateFlower => widget.isToday && widget.animateFlower;
+  bool get _animateColor =>
+      widget.animateColor && widget.previousColor != null;
+  bool get _animates => _animateFlower || _animateColor;
+
+  // 花丸は0〜500ms、色変けは colorDelayMs から500ms。全体の長さはその最大値。
+  int get _flowerMs => _animateFlower ? 500 : 0;
+  int get _totalMs =>
+      _animateColor ? widget.colorDelayMs + 500 : _flowerMs;
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: Duration(milliseconds: _totalMs),
+  );
+
+  late final Animation<double> _flowerAnimation = _animateFlower
+      ? CurvedAnimation(
+          parent: _controller,
+          curve: Interval(0.0, _flowerMs / _totalMs, curve: Curves.easeOut),
+        )
+      : const AlwaysStoppedAnimation<double>(1.0);
+
+  late final Animation<Color?> _colorAnimation = _animateColor
+      ? ColorTween(begin: widget.previousColor, end: widget.backgroundColor)
+          .animate(CurvedAnimation(
+            parent: _controller,
+            curve: Interval(widget.colorDelayMs / _totalMs, 1.0,
+                curve: Curves.easeOut),
+          ))
+      : AlwaysStoppedAnimation<Color?>(widget.backgroundColor);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_animates && widget.startAnimation) _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _GrowthDayCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_animates && !oldWidget.startAnimation && widget.startAnimation) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_animates) _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_animates) {
+      return _buildCell(
+        backgroundColor: widget.backgroundColor,
+        flowerOpacity: 1,
+        flowerOffset: 0,
+      );
+    }
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return _buildCell(
+          backgroundColor: _colorAnimation.value ?? widget.backgroundColor,
+          flowerOpacity: _flowerAnimation.value,
+          // 下から上へ浮き上がってくるように、不透明度が低いほど
+          // 下側にオフセットする。
+          flowerOffset: (1 - _flowerAnimation.value) * 10,
+        );
+      },
+    );
+  }
+
+  Widget _buildCell({
+    required Color backgroundColor,
+    required double flowerOpacity,
+    required double flowerOffset,
+  }) {
     return Container(
       margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border.all(
-          color: isToday ? AppColors.theme : AppColors.themeBorder,
-          width: isToday ? 2 : 0.6,
+          color: widget.isToday ? AppColors.theme : AppColors.themeBorder,
+          width: widget.isToday ? 2 : 0.6,
         ),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -509,24 +723,31 @@ class _GrowthDayCell extends StatelessWidget {
             children: [
               const SizedBox(height: 2),
               Text(
-                '${date.day}',
+                '${widget.date.day}',
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                  color: isCurrentMonth
+                  fontWeight:
+                      widget.isToday ? FontWeight.bold : FontWeight.normal,
+                  color: widget.isCurrentMonth
                       ? Colors.black87
                       : Colors.grey.shade400,
                 ),
               ),
-              if (hasRecord)
+              if (widget.hasRecord)
                 Expanded(
                   child: GestureDetector(
-                    onTap: onTap,
+                    onTap: widget.onTap,
                     child: Center(
-                      child: Image.asset(
-                        HabitConfig.currentFlowerCircleAssetPath,
-                        width: 30,
-                        height: 30,
+                      child: Opacity(
+                        opacity: flowerOpacity,
+                        child: Transform.translate(
+                          offset: Offset(0, flowerOffset),
+                          child: Image.asset(
+                            HabitConfig.currentFlowerCircleAssetPath,
+                            width: 30,
+                            height: 30,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -534,13 +755,14 @@ class _GrowthDayCell extends StatelessWidget {
             ],
           ),
           // ── 吹き出し ─────────────────────────────────
-          if (hasRecord && isOpen)
+          if (widget.hasRecord && widget.isOpen)
             Positioned(
               bottom: 44,
               child: GestureDetector(
-                onTap: onTap, // 吹き出しタップで閉じる
+                onTap: widget.onTap, // 吹き出しタップで閉じる
                 child: _GrowthTooltipBubble(
-                  label: '$count${AppStrings.growthTooltipCountSuffix}',
+                  label:
+                      '${widget.count}${AppStrings.growthTooltipCountSuffix}',
                 ),
               ),
             ),

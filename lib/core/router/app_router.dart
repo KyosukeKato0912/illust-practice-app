@@ -130,14 +130,26 @@ abstract class AppRouter {
   /// [isStreakMilestoneReached] が true の場合、連続アップロード日数が
   /// マイルストーンに到達した旨の特別メッセージを表示する
   /// （両方trueの場合は両方のメッセージを続けて表示する）。
+  /// [showFlowerFadeIn]／[showColorFadeIn]／[showMessageFadeIn]／
+  /// [showPdfButtonFadeIn] は、花丸・色変え・特別メッセージ・PDFボタンを
+  /// それぞれフェードインで表示するかどうか（[GrowthNotifier.confirmUpload]
+  /// の戻り値をそのまま渡す）。
   static Route<void> growthUploadComplete({
     bool isMaxCountReached = false,
     bool isStreakMilestoneReached = false,
+    bool showFlowerFadeIn = false,
+    bool showColorFadeIn = false,
+    bool showMessageFadeIn = false,
+    bool showPdfButtonFadeIn = false,
   }) =>
       MaterialPageRoute(
         builder: (_) => UploadCompleteScreen(
           isMaxCountReached: isMaxCountReached,
           isStreakMilestoneReached: isStreakMilestoneReached,
+          showFlowerFadeIn: showFlowerFadeIn,
+          showColorFadeIn: showColorFadeIn,
+          showMessageFadeIn: showMessageFadeIn,
+          showPdfButtonFadeIn: showPdfButtonFadeIn,
         ),
       );
 

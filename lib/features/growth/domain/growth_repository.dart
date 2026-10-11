@@ -130,12 +130,18 @@ class GrowthRepository {
 
   /// 保持上限（[maxCount]）に「初めて」到達したかどうかを判定する。
   ///
+  /// [currentCount] は「成長記録一覧画面に表示されている枚数」。実データのみ
+  /// の場合は実データの件数と同じだが、メンテナンス画面の「併用」モード
+  /// ではテストデータ分も含む（例：テストデータ20枚＋実データ1枚＝21枚）。
+  ///
   /// 一度到達済み（フラグが立っている）の場合は、その後削除によって
   /// 件数が上限を下回り、再度上限に達しても false を返す
   /// （＝アップロード完了画面の特別メッセージは生涯で一度だけ）。
-  Future<bool> checkFirstTimeReachedMax({required int maxCount}) async {
-    final all = await _dataSource.getAll();
-    if (all.length < maxCount) return false;
+  Future<bool> checkFirstTimeReachedMax({
+    required int maxCount,
+    required int currentCount,
+  }) async {
+    if (currentCount < maxCount) return false;
 
     final alreadyReached = await _metaDataSource.hasReachedMaxCountOnce();
     if (alreadyReached) return false;
