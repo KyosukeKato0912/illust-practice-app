@@ -12,13 +12,11 @@ class TopicRepository {
   TopicRepository({TopicHistoryDataSource? dataSource})
       : _dataSource = dataSource ?? TopicHistoryDataSource();
 
-  Future<String?> getCurrentTopic() => _dataSource.getCurrentTopic();
-
-  Future<void> setCurrentTopic(String topic) =>
-      _dataSource.setCurrentTopic(topic);
-
   Future<List<String>> getHistory() => _dataSource.getHistory();
 
   Future<void> addToHistory(String topic) =>
       _dataSource.addToHistory(topic);
+
+  Future<void> removeFromHistoryAt(int index) =>
+      _dataSource.removeFromHistoryAt(index);
 }

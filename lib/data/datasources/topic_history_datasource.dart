@@ -4,14 +4,14 @@ import 'package:hive/hive.dart';
 // TopicHistoryDataSource
 //
 // お題ジェネレーターの永続データを保持する。
-//   ・現在お題エリアに表示中のお題（アプリ再起動後も表示を保つ）
 //   ・お題履歴（直近10件、新しい順）
+// （お題エリアの表示は、画面を開くたびに履歴の最新1件から決まるため、
+// 「現在表示中のお題」自体は保存しない）
 // GrowthMetaDataSource と同様、専用Hiveアダプタは使わず
 // プリミティブ型（String / List<String>）のまま保存する。
 // ══════════════════════════════════════════════════════════
 class TopicHistoryDataSource {
   static const String boxName = 'topic_history';
-  static const String _keyCurrentTopic = 'current_topic';
   static const String _keyHistory = 'history';
 
   /// お題履歴として保持する最大件数（UI設計_お題ジェネレーター シート準拠）
@@ -22,18 +22,6 @@ class TopicHistoryDataSource {
       return Hive.box(boxName);
     }
     return Hive.openBox(boxName);
-  }
-
-  /// 現在お題エリアに表示中のお題。未生成の場合は null。
-  Future<String?> getCurrentTopic() async {
-    final box = await _openBox();
-    return box.get(_keyCurrentTopic) as String?;
-  }
-
-  /// 現在お題エリアに表示中のお題を保存する。
-  Future<void> setCurrentTopic(String topic) async {
-    final box = await _openBox();
-    await box.put(_keyCurrentTopic, topic);
   }
 
   /// お題履歴（新しい順）。
@@ -49,6 +37,17 @@ class TopicHistoryDataSource {
     final box = await _openBox();
     final current = await getHistory();
     final updated = [topic, ...current].take(maxHistoryCount).toList();
+    await box.put(_keyHistory, updated);
+  }
+
+  /// お題履歴の [index] 番目（新しい順の並びでの位置）を削除する。
+  /// 範囲外の場合は何もしない。同じお題が複数回履歴に入ることがあるため、
+  /// 値ではなく位置で削除する。
+  Future<void> removeFromHistoryAt(int index) async {
+    final box = await _openBox();
+    final current = await getHistory();
+    if (index < 0 || index >= current.length) return;
+    final updated = [...current]..removeAt(index);
     await box.put(_keyHistory, updated);
   }
 }

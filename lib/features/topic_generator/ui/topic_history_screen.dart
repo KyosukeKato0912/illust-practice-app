@@ -14,6 +14,7 @@ import '../state/topic_provider.dart';
 // 1件選んで「決定」を押すと、選択したお題を Navigator.pop の戻り値として
 // TopicMainScreen に返す（TopicMainScreen 側で topicProvider に反映し、
 // お題エリアに表示する）。
+// 各行右端のゴミ箱ボタンで、確認ダイアログの上、その履歴を1件削除できる。
 // ══════════════════════════════════════════════════════════
 class TopicHistoryScreen extends ConsumerStatefulWidget {
   const TopicHistoryScreen({super.key});
@@ -25,6 +26,47 @@ class TopicHistoryScreen extends ConsumerStatefulWidget {
 
 class _TopicHistoryScreenState extends ConsumerState<TopicHistoryScreen> {
   int? _selectedIndex;
+
+  /// 確認ダイアログの上、[index] 番目の履歴を削除する。
+  /// 選択中の履歴を削除した場合は選択を解除し、それより前にある履歴を
+  /// 削除した場合は選択位置を1つ前にずらす（同じ履歴を選び続けるため）。
+  Future<void> _confirmAndDelete(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppStrings.topicHistoryDeleteDialogTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(AppStrings.topicHistoryDeleteDialogMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(AppStrings.dialogCancel,
+                style: const TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppStrings.topicHistoryDeleteDialogConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await ref.read(topicProvider.notifier).removeFromHistoryAt(index);
+    ref.invalidate(topicHistoryProvider);
+    if (!mounted) return;
+    setState(() {
+      final selected = _selectedIndex;
+      if (selected == null) return;
+      if (selected == index) {
+        _selectedIndex = null;
+      } else if (selected > index) {
+        _selectedIndex = selected - 1;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,10 +121,22 @@ class _TopicHistoryScreenState extends ConsumerState<TopicHistoryScreen> {
                                   title: Text(
                                     histories[index].replaceAll('\n', ' ／ '),
                                   ),
-                                  trailing: isSelected
-                                      ? Icon(Icons.check_circle,
-                                          color: AppColors.theme)
-                                      : null,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isSelected)
+                                        Icon(Icons.check_circle,
+                                            color: AppColors.theme),
+                                      IconButton(
+                                        tooltip:
+                                            AppStrings.topicHistoryDeleteTooltip,
+                                        icon: Icon(Icons.delete_outline,
+                                            color: Colors.grey.shade600),
+                                        onPressed: () =>
+                                            _confirmAndDelete(index),
+                                      ),
+                                    ],
+                                  ),
                                   onTap: () =>
                                       setState(() => _selectedIndex = index),
                                 ),

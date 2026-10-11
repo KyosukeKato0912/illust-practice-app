@@ -474,10 +474,6 @@ abstract class AppStrings {
   // ── お題ジェネレーター ──────────────────────
   static const String topicHistoryTitle = 'お題履歴';
 
-  /// お題エリア：お題未生成時のプレースホルダー文言
-  static const String topicAreaEmptyMessage = 'まだお題がありません';
-  static const String topicAreaEmptyHint = '下の「ランダム」または1〜3を選んで「決定」でお題を生成します';
-
   static const String topicCopyButton = 'コピー';
 
   /// コピーボタン押下時に表示するスナックバーの文言
@@ -492,4 +488,11 @@ abstract class AppStrings {
   static const String topicHistoryEmptyMessage = 'まだお題の履歴がありません';
   static const String topicHistoryEmptyHint =
       'お題ジェネレーターでお題を生成すると、ここに履歴が残ります（最新10件）';
+
+  /// お題履歴画面：履歴の削除（削除ボタンのツールチップ・確認ダイアログ）
+  static const String topicHistoryDeleteTooltip = 'この履歴を削除';
+  static const String topicHistoryDeleteDialogTitle = '履歴を削除しますか？';
+  static const String topicHistoryDeleteDialogMessage =
+      'この履歴を削除します。この操作は取り消せません。';
+  static const String topicHistoryDeleteDialogConfirm = '削除';
 }

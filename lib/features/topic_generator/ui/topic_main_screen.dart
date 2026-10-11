@@ -18,7 +18,8 @@ import '../state/topic_provider.dart';
 // 1〜3の選択項目は ListWheelScrollView によるスロット風の縦リールで
 // 表示する（TopicConfig の仮データ・各3件）。
 //   ・決定ボタン：現在3つのリールが示している組み合わせでお題を確定
-//   ・ランダムボタン：3つのリールをランダムな位置までスピンさせてから決定
+//   ・ランダムボタン：3つのリールをランダムな位置までスピンさせるだけ
+//     （確定はしない。確定するには続けて「決定」ボタンを押す）
 // 確定したお題は topicProvider（お題エリア表示用）と履歴（直近10件）に
 // 保存される。履歴画面からの選択・コピーボタンも本画面で完結する。
 // ══════════════════════════════════════════════════════════
@@ -47,6 +48,13 @@ class _TopicMainScreenState extends ConsumerState<TopicMainScreen> {
 
   final _random = Random();
   bool _isSpinning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 画面を開いたときは、履歴の最新のお題を表示する（履歴が空なら何も表示しない）。
+    ref.read(topicProvider.notifier).showLatestFromHistory();
+  }
 
   @override
   void dispose() {
@@ -94,8 +102,9 @@ class _TopicMainScreenState extends ConsumerState<TopicMainScreen> {
 
     await Future.delayed(const Duration(milliseconds: 950));
     if (!mounted) return;
+    // ランダムはリールを回すだけ。お題の確定・履歴への追加は「決定」ボタン
+    // を押したときに行う（ランダム直後に気に入らなければ再度回せるように）。
     setState(() => _isSpinning = false);
-    await _decide();
   }
 
   Future<void> _copy(String topic) async {
@@ -114,6 +123,10 @@ class _TopicMainScreenState extends ConsumerState<TopicMainScreen> {
     );
     if (selected != null) {
       await ref.read(topicProvider.notifier).applyFromHistory(selected);
+    } else {
+      // 選択せずに戻った場合：履歴をすべて削除していたら、前回のお題を
+      // 残さず何も表示しない状態にする。
+      await ref.read(topicProvider.notifier).clearIfHistoryEmpty();
     }
   }
 
@@ -139,7 +152,10 @@ class _TopicMainScreenState extends ConsumerState<TopicMainScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _TopicArea(topic: topic, onCopy: _copy),
-                const SizedBox(height: 24),
+                // テーマ欄（お題エリア）と選択欄（1〜3のリール）の仕切り
+                const SizedBox(height: 16),
+                Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
                 _TopicReel(
                   label: AppStrings.topicSelector1Label,
                   options: TopicConfig.situations,
@@ -223,14 +239,10 @@ class _TopicArea extends StatelessWidget {
           children: [
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 96),
+              // お題が未生成の間は何も表示しない（案内文なども出さない）。
               child: Center(
                 child: topic == null
-                    ? Text(
-                        AppStrings.topicAreaEmptyMessage,
-                        style: TextStyle(
-                            fontSize: 15, color: Colors.grey.shade600),
-                        textAlign: TextAlign.center,
-                      )
+                    ? const SizedBox.shrink()
                     : Text(
                         topic!,
                         style: const TextStyle(fontSize: 17, height: 1.6),
@@ -238,14 +250,6 @@ class _TopicArea extends StatelessWidget {
                       ),
               ),
             ),
-            if (topic == null) ...[
-              const SizedBox(height: 8),
-              Text(
-                AppStrings.topicAreaEmptyHint,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              ),
-            ],
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -262,7 +266,7 @@ class _TopicArea extends StatelessWidget {
 }
 
 // ── 1〜3 選択項目：スロット風リール ───────────────────────
-class _TopicReel extends StatelessWidget {
+class _TopicReel extends StatefulWidget {
   final String label;
   final List<String> options;
   final FixedExtentScrollController controller;
@@ -278,7 +282,22 @@ class _TopicReel extends StatelessWidget {
   });
 
   @override
+  State<_TopicReel> createState() => _TopicReelState();
+}
+
+class _TopicReelState extends State<_TopicReel> {
+  /// 現在中央（選択位置）にある選択肢のインデックス。
+  /// 選択中の選択肢を大きく・太字・テーマカラーで目立たせるために保持する。
+  int _current = 0;
+
+  @override
   Widget build(BuildContext context) {
+    final label = widget.label;
+    final options = widget.options;
+    final controller = widget.controller;
+    final itemExtent = widget.itemExtent;
+    final onSelectedItemChanged = widget.onSelectedItemChanged;
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
@@ -294,6 +313,13 @@ class _TopicReel extends StatelessWidget {
               style: const TextStyle(fontSize: 11),
             ),
           ),
+          // ラベルとリールの仕切り（縦線）
+          Container(
+            width: 1,
+            height: itemExtent * 3,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: Colors.grey.shade300,
+          ),
           Expanded(
             child: Stack(
               alignment: Alignment.center,
@@ -305,15 +331,29 @@ class _TopicReel extends StatelessWidget {
                     itemExtent: itemExtent,
                     diameterRatio: 1.6,
                     physics: const FixedExtentScrollPhysics(),
-                    onSelectedItemChanged: (i) =>
-                        onSelectedItemChanged(i % options.length),
+                    onSelectedItemChanged: (i) {
+                      final index = i % options.length;
+                      onSelectedItemChanged(index);
+                      setState(() => _current = index);
+                    },
                     childDelegate: ListWheelChildLoopingListDelegate(
                       children: [
-                        for (final option in options)
+                        for (var n = 0; n < options.length; n++)
                           Center(
                             child: Text(
-                              option,
-                              style: const TextStyle(fontSize: 13),
+                              options[n],
+                              // 選択中は大きく・太字・テーマカラー、それ以外は
+                              // 小さめ・グレーにして違いをはっきりさせる。
+                              style: n == _current
+                                  ? TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.theme,
+                                    )
+                                  : TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                             ),
