@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -39,6 +40,17 @@ import '../utils/date_utils.dart';
 //   その固定高さの pw.Container で包む。Container が高さを確定させるため、
 //   内部（_buildGrid など）で使っている pw.Expanded は問題なく機能する。
 //
+// ── 画像の縮小について（メモリ不足対策） ─────────────────
+// 成長記録の画像は原寸（数MB）のまま保存されているが、PDF上のサムネは
+// 4cm角程度のため、原寸のまま埋め込むと300枚で出力が数百MBになり、
+// Dartヒープ（約256MB）を超えて「Out of Memory」になる（実機で確認済み）。
+// そのため埋め込み前に flutter_image_compress（ネイティブ処理）で
+// 長辺〜[_thumbMinSize]px・JPEG品質[_thumbQuality]に縮小・再圧縮する
+// （1枚あたり数十KB。pdfパッケージはJPEGを再エンコードせずそのまま
+// 埋め込むため軽い）。縮小は[_concurrency]枚ずつ非同期で行うため、
+// UIスレッドを塞がず、進捗も通知できる。同じパスの画像は1回だけ縮小し、
+// 同じImageProviderを使い回す（PDF内でも1つの画像として埋め込まれる）。
+//
 // UIからは build() のみを呼び出し、Documentの組み立て・画像読み込みは
 // このサービス内に閉じる。
 // ══════════════════════════════════════════════════════════
@@ -46,6 +58,16 @@ abstract class GrowthPdfService {
   static const int _columns = 3;
   static const int _rows = 4;
   static const int _perPage = _columns * _rows;
+
+  // サムネ用に縮小する際の設定（A4上のセルは約5.9cm×5.3cm＝約170dpiで
+  // 480px程度あれば十分）。
+  static const int _thumbMinSize = 480;
+  static const int _thumbQuality = 75;
+  static const int _concurrency = 4;
+
+  // 進捗表示：画像の縮小が完了した時点を何％とみなすか（残りはPDFの
+  // 組み立て・書き出し）。
+  static const int _progressImagePercent = 90;
 
   // ページ余白・ヘッダー／フッターの高さは固定値として自前管理する
   // （_buildHeader/_buildFooter もこの値に合わせて描画する）。
@@ -64,22 +86,49 @@ abstract class GrowthPdfService {
       _footerHeight;
 
   /// [records] は成長記録の全件をそのまま渡す想定（絞込の影響は受けない）。
-  /// 内部で日付昇順に並び替えてから表紙の対象期間・グリッドの並びを決める。
-  static Future<Uint8List> build(List<GrowthRecord> records) async {
+  /// 並び順は渡された [records] の順序をそのまま踏襲する（内部では並べ替えない）。
+  /// 成長記録メイン画面側のソート設定で並べた一覧を渡すことで、
+  /// 画面と同じ並びでPDFが出力される。表紙の対象期間は並び順に依存せず、
+  /// 日付の最小〜最大から決める。
+  ///
+  /// [onProgress] には全体の進捗（0〜100の整数％）が通知される。
+  /// 画像の縮小（時間の大半を占める）を0〜[_progressImagePercent]％、
+  /// その後のPDFの組み立て・書き出しの完了を100％として扱う。
+  static Future<Uint8List> build(
+    List<GrowthRecord> records, {
+    void Function(int percent)? onProgress,
+  }) async {
+    onProgress?.call(0);
     final regularFont = await PdfGoogleFonts.notoSansJPRegular();
     final boldFont = await PdfGoogleFonts.notoSansJPBold();
     final theme = pw.ThemeData.withFont(base: regularFont, bold: boldFont);
 
     final doc = pw.Document(theme: theme);
 
-    final sorted = [...records]..sort((a, b) => a.date.compareTo(b.date));
-    final periodLabel = sorted.isEmpty
-        ? ''
-        : '${AppDateUtils.formatYMD(sorted.first.date)} 〜 '
-            '${AppDateUtils.formatYMD(sorted.last.date)}';
-    final totalDurationMin = sorted.fold<int>(
+    // 並び順は呼び出し元が渡した順序のまま（再ソートしない）
+    final ordered = records;
+    String periodLabel = '';
+    if (ordered.isNotEmpty) {
+      // 並び順に依存しないよう、日付の最小・最大から期間を求める
+      var oldest = ordered.first.date;
+      var newest = ordered.first.date;
+      for (final r in ordered) {
+        if (r.date.isBefore(oldest)) oldest = r.date;
+        if (r.date.isAfter(newest)) newest = r.date;
+      }
+      periodLabel = '${AppDateUtils.formatYMD(oldest)} 〜 '
+          '${AppDateUtils.formatYMD(newest)}';
+    }
+    final totalDurationMin = ordered.fold<int>(
         0, (sum, r) => sum + (r.durationMin ?? 0));
-    final chunks = _chunk(sorted, _perPage);
+    final chunks = _chunk(ordered, _perPage);
+    final thumbnails = await _prepareThumbnails(
+      ordered,
+      onProgress == null
+          ? null
+          : (done, total) => onProgress(
+              total == 0 ? _progressImagePercent : done * _progressImagePercent ~/ total),
+    );
 
     doc.addPage(
       pw.MultiPage(
@@ -97,19 +146,60 @@ abstract class GrowthPdfService {
             height: _contentHeight,
             child: _buildCover(
               periodLabel: periodLabel,
-              count: sorted.length,
+              count: ordered.length,
               totalDurationMin: totalDurationMin,
             ),
           ),
           for (final chunk in chunks) ...[
             pw.NewPage(),
-            pw.Container(height: _contentHeight, child: _buildGrid(chunk)),
+            pw.Container(height: _contentHeight, child: _buildGrid(chunk, thumbnails)),
           ],
         ],
       ),
     );
 
-    return doc.save();
+    final bytes = await doc.save();
+    onProgress?.call(100);
+    return bytes;
+  }
+
+  /// 全レコードの画像をサムネ用に縮小し、パス→ImageProvider のMapで返す。
+  /// 縮小に失敗した画像は null（セルは空枠になる）。
+  static Future<Map<String, pw.MemoryImage?>> _prepareThumbnails(
+    List<GrowthRecord> records,
+    void Function(int done, int total)? onProgress,
+  ) async {
+    final paths = <String>{for (final r in records) r.imagePath}.toList();
+    final result = <String, pw.MemoryImage?>{};
+    onProgress?.call(0, paths.length);
+
+    for (var i = 0; i < paths.length; i += _concurrency) {
+      final batch = paths.sublist(
+          i, (i + _concurrency < paths.length) ? i + _concurrency : paths.length);
+      final images = await Future.wait(batch.map(_compressToThumbnail));
+      for (var j = 0; j < batch.length; j++) {
+        result[batch[j]] = images[j];
+      }
+      onProgress?.call(i + batch.length, paths.length);
+    }
+    return result;
+  }
+
+  static Future<pw.MemoryImage?> _compressToThumbnail(String path) async {
+    try {
+      final bytes = await FlutterImageCompress.compressWithFile(
+        path,
+        minWidth: _thumbMinSize,
+        minHeight: _thumbMinSize,
+        quality: _thumbQuality,
+        format: CompressFormat.jpeg,
+      );
+      if (bytes == null || bytes.isEmpty) return null;
+      return pw.MemoryImage(bytes);
+    } catch (e) {
+      debugPrint('[GrowthPdfService] 画像の縮小に失敗しました: $path ($e)');
+      return null;
+    }
   }
 
   /// [Printing.sharePdf] に渡すファイル名（例：'成長記録_2026-06-01.pdf'）を組み立てる。
@@ -211,7 +301,10 @@ abstract class GrowthPdfService {
   }
 
   // ── サムネグリッド（3列×4行、余りは空セルで埋める） ──────
-  static pw.Widget _buildGrid(List<GrowthRecord> records) {
+  static pw.Widget _buildGrid(
+    List<GrowthRecord> records,
+    Map<String, pw.MemoryImage?> thumbnails,
+  ) {
     final rowWidgets = <pw.Widget>[];
     for (var r = 0; r < _rows; r++) {
       final cells = <pw.Widget>[];
@@ -222,7 +315,7 @@ abstract class GrowthPdfService {
             child: pw.Padding(
               padding: const pw.EdgeInsets.all(6),
               child: index < records.length
-                  ? _buildCell(records[index])
+                  ? _buildCell(records[index], thumbnails[records[index].imagePath])
                   : pw.Container(),
             ),
           ),
@@ -244,9 +337,8 @@ abstract class GrowthPdfService {
   }
 
   // ── サムネ1件分（ファイル名 + 画像） ─────────────────────
-  static pw.Widget _buildCell(GrowthRecord record) {
+  static pw.Widget _buildCell(GrowthRecord record, pw.MemoryImage? image) {
     final fileName = record.imagePath.split('/').last;
-    final bytes = File(record.imagePath).readAsBytesSync();
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -264,7 +356,9 @@ abstract class GrowthPdfService {
             decoration: pw.BoxDecoration(
               border: pw.Border.all(width: 0.5, color: PdfColors.grey400),
             ),
-            child: pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.cover),
+            child: image == null
+                ? pw.Container()
+                : pw.Image(image, fit: pw.BoxFit.cover),
           ),
         ),
       ],

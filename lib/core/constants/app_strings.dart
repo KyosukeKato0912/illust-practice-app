@@ -282,6 +282,10 @@ abstract class AppStrings {
   /// PDF書き出し対象が0件（絞込結果を含む）の場合のSnackBar文言
   static const String growthPdfEmptyError = '書き出せる画像がありません';
 
+  /// PDF生成中のボタン表示（例：'作成中:45%'）
+  static const String growthPdfProgressPrefix = '作成中:';
+  static const String growthPdfProgressSuffix = '%';
+
   /// PDF生成に失敗した場合のSnackBar文言
   static const String growthPdfGenerateError = 'PDFの作成に失敗しました';
 

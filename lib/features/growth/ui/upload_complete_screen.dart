@@ -74,6 +74,9 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
   /// アップロード完了時）のみ、本画面にもPDFボタンを表示する。
   bool _isGeneratingPdf = false;
 
+  /// PDF生成中の進捗表示（例：'作成中:45%'）。生成中のみ非null。
+  String? _pdfProgressLabel;
+
   // ── 演出アニメーション（花丸→色変け→メッセージ→PDFボタン） ──
   // 4種類とも一律0.5秒のフェードイン。実際に発生する演出のみを
   // この順番で積み上げてスケジュールする（発生しない段はスキップし、
@@ -157,7 +160,16 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
 
     setState(() => _isGeneratingPdf = true);
     try {
-      final bytes = await GrowthPdfService.build(records);
+      final bytes = await GrowthPdfService.build(
+        records,
+        onProgress: (percent) {
+          if (mounted) {
+            setState(() => _pdfProgressLabel =
+                '${AppStrings.growthPdfProgressPrefix}$percent'
+                '${AppStrings.growthPdfProgressSuffix}');
+          }
+        },
+      );
       if (!mounted) return;
       await FilePicker.platform.saveFile(
         fileName: GrowthPdfService.buildFileName(DateTime.now()),
@@ -173,7 +185,12 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
         const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
       );
     } finally {
-      if (mounted) setState(() => _isGeneratingPdf = false);
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+          _pdfProgressLabel = null;
+        });
+      }
     }
   }
 
@@ -338,9 +355,10 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
                             ),
                           )
                         : const Icon(Icons.picture_as_pdf_outlined, size: 20),
-                    label: const Text(
-                      AppStrings.growthUploadCompletePdfButton,
-                      style: TextStyle(fontSize: 16),
+                    label: Text(
+                      _pdfProgressLabel ??
+                          AppStrings.growthUploadCompletePdfButton,
+                      style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ),

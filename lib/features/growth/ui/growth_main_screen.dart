@@ -79,6 +79,9 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
   /// SNS共有シート起動中フラグ（多重タップ防止・ローディング表示用）
   bool _isSharing = false;
 
+  /// PDF生成中の進捗表示（例：'作成中:45%'）。生成中のみ非null。
+  String? _pdfProgressLabel;
+
   /// PDF生成中フラグ（多重タップ防止・ローディング表示用）
   bool _isGeneratingPdf = false;
 
@@ -275,7 +278,16 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
     setState(() => _isGeneratingPdf = true);
     try {
-      final bytes = await GrowthPdfService.build(records);
+      final bytes = await GrowthPdfService.build(
+        records,
+        onProgress: (percent) {
+          if (mounted) {
+            setState(() => _pdfProgressLabel =
+                '${AppStrings.growthPdfProgressPrefix}$percent'
+                '${AppStrings.growthPdfProgressSuffix}');
+          }
+        },
+      );
       if (!mounted) return;
       // 共有シートではなくOSの保存ダイアログで直接保存する。
       // モバイルではbytesを渡すとプラグイン側が選択先に書き込みまで行う。
@@ -300,7 +312,12 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
         const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
       );
     } finally {
-      if (mounted) setState(() => _isGeneratingPdf = false);
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+          _pdfProgressLabel = null;
+        });
+      }
     }
   }
 
@@ -675,7 +692,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                                 label: FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Text(
-                                    AppStrings.growthPdfButton,
+                                    _pdfProgressLabel ??
+                                        AppStrings.growthPdfButton,
                                     maxLines: 1,
                                     style: const TextStyle(fontSize: 13),
                                   ),
