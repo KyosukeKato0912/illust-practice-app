@@ -77,10 +77,7 @@ abstract class AppStrings {
   static const String drawingSummaryDurationPrefix = '切替'; // 切替: X秒
   static const String drawingSummaryMaxTimePrefix = '上限'; // 上限: X分 / 無制限
 
-  static const String drawingPrevLabel = '前の画像';
-  static const String drawingNextLabel = '次の画像';
   static const String drawingToggleHeightButton = '頭身切り替え';
-  static const String drawingNoPairLabel = 'ペアなし';
   static const String drawingAuthorPrefix = '作者：';
 
   // ── X秒ドローイング 終了画面 ─────────────────────────────
@@ -132,7 +129,6 @@ abstract class AppStrings {
   static const String habitTimerPause = '一時停止';
   static const String habitTimerResume = '再開';
   static const String habitTimerReset = 'リセット';
-  static const String habitCountDownLabel = '作業中';
   static const String habitCountUpLabel = '総作業時間';
   static const String habitCountUpResetDialogTitle = '総作業時間のリセット';
   static const String habitCountUpResetDialogMessage =
@@ -234,9 +230,6 @@ abstract class AppStrings {
   static const String growthUploadButton = 'ADD';
   static const String growthSnsButton = 'SNS';
   static const String growthDownloadButton = 'DL';
-
-  /// アップロード機能が未実装の間、アップロードボタン押下時に表示する案内
-  static const String growthUploadComingSoon = 'アップロード機能は準備中です';
 
   static const String growthEmptyState = 'まだ画像がありません\nアップロードして練習の記録を始めましょう';
 
@@ -380,11 +373,6 @@ abstract class AppStrings {
     '土曜日',
     '日曜日',
   ];
-
-  // ── 未実装画面 ──────────────────────────────────────────
-  static const String proLessonDescription = 'プロ絵師によるテクニックを学ぶ画面です';
-  static const String topicDescription = 'ランダムなお題を生成する画面です';
-  static const String habitDescription = '毎日の練習習慣をサポートする画面です';
 
   // ── 共通ダイアログ ──────────────────────────────────────
   static const String dialogCancel = 'キャンセル';

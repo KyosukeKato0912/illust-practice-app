@@ -18,9 +18,6 @@ abstract class AppColors {
   static const Color disabledText = Color(0xFF9E9E9E); // grey.shade500
 
   // ホーム画面 各機能ボタンカラー
-  static const Color topicGenerator = Colors.teal;
-  static const Color growthRecord = Colors.orange;
-  static const Color habitSupport = Colors.pink;
   static const Color proArtistLesson = Colors.indigo;
 
   // 習慣化サポート：継続カレンダー 連続記録の強調色

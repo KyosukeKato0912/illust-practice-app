@@ -24,7 +24,6 @@ class _PairEntry {
 
   const _PairEntry(this.models);
 
-  bool get hasPair => models.length >= 2;
   DrawingModel get first => models[0];
 }
 

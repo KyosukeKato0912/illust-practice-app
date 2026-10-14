@@ -27,8 +27,4 @@ abstract class AppDateUtils {
   /// 指定した週の月曜日から7日分（月〜日）の日付リストを返す
   static List<DateTime> getWeekDates(DateTime monday) =>
       List.generate(7, (i) => monday.add(Duration(days: i)));
-
-  /// 2つの日付が同じ日（年月日が一致）かどうかを判定する
-  static bool isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 }
