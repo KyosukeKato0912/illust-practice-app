@@ -1,3 +1,5 @@
+import '../constants/app_strings.dart';
+
 // ══════════════════════════════════════════════════════════
 // int 拡張
 // ══════════════════════════════════════════════════════════
@@ -12,10 +14,12 @@ extension IntExt on int {
   ///
   /// タイマー表示・設定サマリー等、複数箇所で使用する。
   String toDisplayDuration() {
-    if (this < 60) return '$this 秒';
+    if (this < 60) return '$this ${AppStrings.unitSecond}';
     final m = this ~/ 60;
     final s = this % 60;
-    return s == 0 ? '$m 分' : '$m 分 $s 秒';
+    return s == 0
+        ? '$m ${AppStrings.unitMinute}'
+        : '$m ${AppStrings.unitMinute} $s ${AppStrings.unitSecond}';
   }
 
   /// 秒数を 'HH:MM:SS' 形式に変換する（総作業時間等の表示用）。

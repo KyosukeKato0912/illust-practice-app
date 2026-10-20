@@ -15,15 +15,16 @@ import '../../features/habit/ui/habit_settings_screen.dart';
 import '../../features/habit/ui/habit_timer_screen.dart';
 import '../../features/home/ui/home_screen.dart';
 import '../../features/maintenance/ui/maintenance_screen.dart';
+import '../../features/onboarding/ui/onboarding_gate_widget.dart';
 import '../../features/topic_generator/ui/topic_history_screen.dart';
 import '../../features/topic_generator/ui/topic_main_screen.dart';
 import '../../shared/patterns/full_image_screen.dart';
+import '../config/onboarding_config.dart';
 
 // ══════════════════════════════════════════════════════════
 // ルート定義
 //
-// ⚠ 暫定実装：現フェーズは Navigator.push による画面遷移を使用。
-//   go_router 導入時はここに GoRouter を集約する。
+// 画面遷移は Navigator.push で行い、遷移先（Route）の生成をここに集約する。
 //
 // 各機能の画面クラスをここでのみ import し、
 // 画面間の依存を一本化する。
@@ -33,11 +34,21 @@ import '../../shared/patterns/full_image_screen.dart';
 // ══════════════════════════════════════════════════════════
 abstract class AppRouter {
   /// ホーム画面（アプリ起動時のルート）
-  static Widget get home => const HomeScreen();
+  ///
+  /// 初回起動時のみ、先にオンボーディング（案内）を表示する。
+  static Widget get home => const OnboardingGateWidget(
+        topic: OnboardingTopic.home,
+        child: HomeScreen(),
+      );
 
   /// X秒ドローイング準備画面へのルート
+  ///
+  /// 初めて開くときのみ、先にオンボーディング（案内）を表示する。
   static Route<void> drawing() => MaterialPageRoute(
-        builder: (_) => const DrawingInitialScreen(),
+        builder: (_) => const OnboardingGateWidget(
+          topic: OnboardingTopic.drawing,
+          child: DrawingInitialScreen(),
+        ),
       );
 
   /// X秒ドローイング メイン画面へのルート
@@ -78,8 +89,13 @@ abstract class AppRouter {
       );
 
   /// 習慣化サポート メイン画面へのルート
+  ///
+  /// 初めて開くときのみ、先にオンボーディング（案内）を表示する。
   static Route<void> habit() => MaterialPageRoute(
-        builder: (_) => const HabitMainScreen(),
+        builder: (_) => const OnboardingGateWidget(
+          topic: OnboardingTopic.habit,
+          child: HabitMainScreen(),
+        ),
       );
 
   /// メンテナンス画面へのルート
@@ -112,8 +128,13 @@ abstract class AppRouter {
       );
 
   /// 成長記録 メイン画面へのルート
+  ///
+  /// 初めて開くときのみ、先にオンボーディング（案内）を表示する。
   static Route<void> growth() => MaterialPageRoute(
-        builder: (_) => const GrowthMainScreen(),
+        builder: (_) => const OnboardingGateWidget(
+          topic: OnboardingTopic.growth,
+          child: GrowthMainScreen(),
+        ),
       );
 
   /// 成長記録 アップロード画面へのルート
@@ -169,8 +190,13 @@ abstract class AppRouter {
       );
 
   /// お題ジェネレーター メイン画面へのルート
+  ///
+  /// 初めて開くときのみ、先にオンボーディング（案内）を表示する。
   static Route<void> topic() => MaterialPageRoute(
-        builder: (_) => const TopicMainScreen(),
+        builder: (_) => const OnboardingGateWidget(
+          topic: OnboardingTopic.topic,
+          child: TopicMainScreen(),
+        ),
       );
 
   /// お題履歴画面へのルート

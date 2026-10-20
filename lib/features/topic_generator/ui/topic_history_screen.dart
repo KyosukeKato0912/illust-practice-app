@@ -9,7 +9,6 @@ import '../state/topic_provider.dart';
 // ══════════════════════════════════════════════════════════
 // お題履歴画面
 //
-// 「企画書_ver3.xlsx」の UI設計_お題ジェネレーター シートに準拠。
 // 直近10件分のお題履歴（topicHistoryProvider）をスクロールで表示する。
 // 1件選んで「決定」を押すと、選択したお題を Navigator.pop の戻り値として
 // TopicMainScreen に返す（TopicMainScreen 側で topicProvider に反映し、
@@ -191,7 +190,7 @@ class _TopicHistoryEmptyState extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             AppStrings.topicHistoryEmptyHint,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: AppColors.subText),
             textAlign: TextAlign.center,
           ),
         ],

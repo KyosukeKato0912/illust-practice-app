@@ -37,6 +37,20 @@ abstract class AppValues {
   /// サムネイル一覧（グリッド）の上下余白
   static const double gridContentPadding = 12.0;
 
+  /// 成長記録のサムネイル一覧の縦横比（幅:高さ）。
+  /// ⚠ グリッド描画とドラッグ選択の当たり判定（幾何計算）の双方で
+  ///   同じ値を使うこと。
+  static const double growthThumbAspectRatio = 0.75;
+
+  /// X秒ドローイング モデル一覧のサムネイルの縦横比（幅:高さ）
+  static const double modelThumbAspectRatio = 0.75;
+
+  /// 継続カレンダー（習慣化サポート／成長記録）の曜日ヘッダーの高さ
+  static const double calendarHeaderHeight = 24.0;
+
+  /// 継続カレンダー（習慣化サポート／成長記録）の1週分の行の高さ
+  static const double calendarRowHeight = 56.0;
+
   // ── X秒ドローイング ─────────────────────────────────────
   /// 開始カウントダウン秒数
   static const int drawingCountdownSec = 3;
@@ -62,15 +76,21 @@ abstract class AppValues {
   /// 最大作業時間「無制限」を表す値
   static const int drawingMaxWorkTimeUnlimited = 0;
 
+  /// モデル名ラベルを完全表示する時間（ミリ秒）
+  static const int drawingModelLabelVisibleMs = 300;
+
+  /// モデル名ラベルのフェードアウト時間（ミリ秒）
+  static const int drawingModelLabelFadeMs = 200;
+
+  /// 切り替えまでの残り秒数がこの値以下になると警告演出（点滅・色変化）を行う
+  static const int drawingAlertThresholdSec = 5;
+
   /// ドットインジケーターを表示する最大枚数
   static const int drawingDotIndicatorMaxCount = 20;
 
   // ── アセットパス ────────────────────────────────────────
   /// ポーズモデル画像の格納フォルダ
   static const String modelAssetFolder = 'assets/images/models/';
-
-  // ── モデルカテゴリ ──────────────────────────────────────
-  // NOTE: カテゴリ定義順は DrawingConfig.categories のリスト順で管理する
 
   // ── 習慣化サポート ───────────────────────────────────────
   /// 設定：メリハリタイマー 作業時間の下限（分）
@@ -89,17 +109,46 @@ abstract class AppValues {
   /// 60の約数であること。実機検証で短い間隔を試したいときは 1 にする。
   static const int habitReminderMinuteInterval = 30;
 
+  /// 基本セットの既定の作業時間（分）
+  static const int habitDefaultTimerMinutes = 25;
+
+  /// 基本セットの既定の休憩時間（分）
+  static const int habitDefaultBreakMinutes = 5;
+
+  /// 自由設定の既定の作業時間（分）
+  static const int habitDefaultCustomTimerMinutes = 10;
+
+  /// 自由設定の既定の休憩時間（分）
+  static const int habitDefaultCustomBreakMinutes = 5;
+
+  /// 作業開始促進通知の既定の時刻（時）
+  static const int habitDefaultReminderHour = 12;
+
+  /// 作業開始促進通知の既定の時刻（分）
+  static const int habitDefaultReminderMinute = 0;
+
+  /// 継続カレンダー：連続記録の目標日数（21日）。
+  /// 濃い黄色への切り替えと、成長記録の継続お祝いメッセージの基準となる。
+  static const int streakTargetDays = 21;
+
   /// 継続カレンダー：連続記録が濃い黄色になる日数のしきい値
-  static const int habitStreakDarkThresholdDays = 21;
+  static const int habitStreakDarkThresholdDays = streakTargetDays;
 
   /// 成長記録 継続カレンダー：連続記録が濃い黄色になる日数のしきい値
-  static const int growthStreakDarkThresholdDays = 21;
+  static const int growthStreakDarkThresholdDays = streakTargetDays;
 
   // ── Hive typeId 一覧（重複登録防止のため一元管理） ─────
-  // GrowthRecord   : typeId = 0  （実装済み）
-  //   ⚠ 習慣化サポートの継続カレンダーも本モデルを参照する
-  //     （専用のHabitRecordモデルは持たない。データは成長記録で
-  //     画像登録（ファイル・写真）した時にのみ作られる）
-  // TopicHistory   : typeId = 2  （未実装）
-  // AppSettings    : typeId = 3  （未実装）
+  // GrowthRecord   : typeId = 0  （実装済み・TypeAdapterあり）
+  //
+  // ■ 以下のBoxはTypeAdapterを使わない（typeIdを消費しない）
+  //   growth_meta            : フラグ類（プリミティブ値）
+  //   growth_practice_log    : 練習日の記録（Map）。継続カレンダー用で、
+  //                            習慣化サポートのカレンダーもこれを参照する
+  //                            （専用のHabitRecordモデルは持たない）
+  //   growth_serial_counters : 日別の連番カウンタ（int）
+  //   topic_history          : お題履歴（文字列リスト）
+  //
+  // ■ typeId = 1 以降は現在どのモデルにも割り当てていない。
+  //   TypeAdapterを持つモデルを追加する際は、本コメントに追記して
+  //   重複を防ぐこと。
 }

@@ -177,7 +177,7 @@ class _HabitTimerScreenState extends ConsumerState<HabitTimerScreen> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          !s.isReady ? Colors.grey.shade300 : phaseButtonColor,
+                          !s.isReady ? AppColors.disabledBackground : phaseButtonColor,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),

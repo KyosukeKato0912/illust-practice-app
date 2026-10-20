@@ -259,11 +259,12 @@ class _DrawingMainScreenState extends State<DrawingMainScreen> {
     });
   }
 
-  // ── 0.5秒モデル名ラベルを表示してからスライド開始 ────────
+  // ── モデル名ラベルを表示してからスライド開始 ────────────
   // [skipLabel] がtrueの場合（ペア内遷移・手動ボタン操作）はラベルをスキップ
-  // 前半 300ms: 完全表示 → 後半 200ms: フェードアウト → スライド開始
+  // 前半（AppValues.drawingModelLabelVisibleMs）: 完全表示
+  //   → 後半（AppValues.drawingModelLabelFadeMs）: フェードアウト → スライド開始
   //
-  // ラベル表示中（計 500ms）は最大作業時間タイマーを停止する。
+  // ラベル表示中は最大作業時間タイマーを停止する。
   // これにより、画像切り替えカウントダウンと最大作業時間カウントダウンの
   // 起算点が一致し、ラベル表示のたびに生じていたズレを防ぐ。
   void _showLabelThenStart({bool skipLabel = false}) {
@@ -278,12 +279,14 @@ class _DrawingMainScreenState extends State<DrawingMainScreen> {
       _isShowingLabel = true;
       _isLabelFadingOut = false;
     });
-    // 300ms後にフェードアウト開始
-    _labelTimer = Timer(const Duration(milliseconds: 300), () {
+    // 完全表示の時間が経過したらフェードアウト開始
+    _labelTimer = Timer(
+        const Duration(milliseconds: AppValues.drawingModelLabelVisibleMs), () {
       if (!mounted) return;
       setState(() => _isLabelFadingOut = true);
-      // さらに200ms後にラベルを非表示にしてスライド開始
-      _labelTimer = Timer(const Duration(milliseconds: 200), () {
+      // フェードアウトの時間が経過したらラベルを非表示にしてスライド開始
+      _labelTimer = Timer(
+          const Duration(milliseconds: AppValues.drawingModelLabelFadeMs), () {
         if (!mounted) return;
         setState(() {
           _isShowingLabel = false;
@@ -712,7 +715,7 @@ class _DrawingMainScreenState extends State<DrawingMainScreen> {
                     icon: const Icon(Icons.skip_previous),
                     style: IconButton.styleFrom(
                       backgroundColor:
-                          isFirst ? Colors.grey.shade300 : AppColors.theme,
+                          isFirst ? AppColors.disabledBackground : AppColors.theme,
                       foregroundColor: Colors.white,
                       iconSize: 32,
                       padding: const EdgeInsets.all(12),
@@ -735,7 +738,7 @@ class _DrawingMainScreenState extends State<DrawingMainScreen> {
                     icon: const Icon(Icons.skip_next),
                     style: IconButton.styleFrom(
                       backgroundColor:
-                          isLast ? Colors.grey.shade300 : AppColors.theme,
+                          isLast ? AppColors.disabledBackground : AppColors.theme,
                       foregroundColor: Colors.white,
                       iconSize: 32,
                       padding: const EdgeInsets.all(12),
@@ -787,9 +790,9 @@ class _ModelInfoPanel extends StatelessWidget {
     final double maxTextW = panelW - 8;
 
     // ノート風デザイン定数
-    const Color noteBg = Color(0xFFFFFDE7); // クリーム（黄みがかった白）
-    const Color noteRuleLine = Color(0xFFBBDEFB); // 薄青の横罫線
-    const Color noteMargin = Color(0xFFEF9A9A); // 赤のマージン縦線
+    const Color noteBg = AppColors.noteBackground;
+    const Color noteRuleLine = AppColors.noteRuleLine;
+    const Color noteMargin = AppColors.noteMargin;
     const double marginLineX = 12.0;
     const double ruleHeight = 0.6;
     const double ruleSpacing = 2.5;
@@ -799,7 +802,7 @@ class _ModelInfoPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: noteBg,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+        border: Border.all(color: AppColors.border, width: 0.5),
       ),
       child: Stack(
         children: [
@@ -980,7 +983,7 @@ class _CircularCountdownTimerState extends State<_CircularCountdownTimer>
   late final Animation<double> _flashAnim; // 背景フラッシュ opacity 0.0→0.4→0.0
 
   // アニメーションをトリガーする閾値（秒）
-  static const int _alertThreshold = 5;
+  static const int _alertThreshold = AppValues.drawingAlertThresholdSec;
 
   @override
   void initState() {
@@ -1041,7 +1044,7 @@ class _CircularCountdownTimerState extends State<_CircularCountdownTimer>
 
   // 残り秒数に応じた数字カラー
   Color _numColor() {
-    if (widget.isPaused) return Colors.grey.shade500;
+    if (widget.isPaused) return AppColors.subText;
     if (widget.remaining <= 2) return Colors.red.shade400;
     if (widget.remaining <= _alertThreshold) return Colors.orange.shade400;
     return AppColors.theme;

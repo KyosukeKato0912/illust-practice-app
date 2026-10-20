@@ -13,9 +13,8 @@ import 'features/habit/state/habit_practice_provider.dart';
 // MaterialApp の設定・テーマ注入・初期ルートを定義する。
 // エントリポイント（main.dart）からのみ呼び出す。
 //
-// ⚠ 暫定実装：現フェーズは Navigator.push を使用。
-//   go_router 導入時は MaterialApp.router + GoRouter に移行する。
-//   ルート定義は app_router.dart に集約済み。
+// 画面遷移は Navigator.push を使用する。
+// ルート定義は app_router.dart に集約している。
 // ══════════════════════════════════════════════════════════
 class App extends ConsumerWidget {
   const App({super.key});

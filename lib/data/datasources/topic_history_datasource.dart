@@ -14,7 +14,7 @@ class TopicHistoryDataSource {
   static const String boxName = 'topic_history';
   static const String _keyHistory = 'history';
 
-  /// お題履歴として保持する最大件数（UI設計_お題ジェネレーター シート準拠）
+  /// お題履歴として保持する最大件数
   static const int maxHistoryCount = 10;
 
   Future<Box> _openBox() async {

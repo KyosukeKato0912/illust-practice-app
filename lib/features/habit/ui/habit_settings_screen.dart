@@ -453,7 +453,7 @@ class _ModeSelector extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -612,7 +612,7 @@ class _ReminderSetting extends StatelessWidget {
             enabled
                 ? AppStrings.habitReminderEnabledDesc
                 : AppStrings.habitReminderDisabledDesc,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: AppColors.subText),
           ),
           secondary: Icon(
             enabled ? Icons.notifications_active : Icons.notifications_off,
@@ -720,7 +720,7 @@ class _ComebackSetting extends StatelessWidget {
             enabled
                 ? AppStrings.habitComebackEnabledDesc
                 : AppStrings.habitComebackDisabledDesc,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 12, color: AppColors.subText),
           ),
           secondary: Icon(
             enabled ? Icons.person_add_alt_1 : Icons.person_off_outlined,
@@ -776,7 +776,7 @@ class _ComebackSetting extends StatelessWidget {
                                   border: Border.all(
                                     color: selected
                                         ? AppColors.theme
-                                        : Colors.grey.shade300,
+                                        : AppColors.border,
                                   ),
                                 ),
                                 child: Text(
@@ -872,7 +872,7 @@ class _MinutesSetting extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              '$minutes 分',
+              '$minutes ${AppStrings.unitMinute}',
               style: const TextStyle(
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
@@ -896,12 +896,12 @@ class _MinutesSetting extends StatelessWidget {
           max: maxMinutes.toDouble(),
           divisions: maxMinutes - minMinutes,
           activeColor: AppColors.theme,
-          label: '$minutes 分',
+          label: '$minutes ${AppStrings.unitMinute}',
           onChanged: (v) => onChanged(v.round()),
         ),
         Text(
-          '$minMinutes 分〜$maxMinutes 分',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          '$minMinutes ${AppStrings.unitMinute}〜$maxMinutes ${AppStrings.unitMinute}',
+          style: TextStyle(fontSize: 12, color: AppColors.subText),
         ),
       ],
     );

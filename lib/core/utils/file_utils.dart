@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../constants/app_strings.dart';
 
 // ══════════════════════════════════════════════════════════
 // 画像保存パス・一時ファイル操作ヘルパー
@@ -49,8 +50,11 @@ abstract class AppFileUtils {
     final y = date.year.toString().padLeft(4, '0');
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
-    final base = '$y-$m-$d-$serialNumber枚目';
-    final name = durationMin != null ? '$base-$durationMin分' : base;
+    final base =
+        '$y-$m-$d-$serialNumber${AppStrings.growthFileNameSerialSuffix}';
+    final name = durationMin != null
+        ? '$base-$durationMin${AppStrings.growthFileNameMinuteSuffix}'
+        : base;
     return '$name.$extension';
   }
 

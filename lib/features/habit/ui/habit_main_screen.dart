@@ -110,7 +110,7 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
       initialDate: _weekMonday,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      helpText: '週を選択してください',
+      helpText: AppStrings.habitWeekPickerHelp,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
@@ -500,8 +500,8 @@ class _ContinuityCalendar extends StatelessWidget {
   });
 
   // 成長記録のアップロード完了画面（_GrowthMonthCalendar）と同じ寸法
-  static const double _headerH = 24.0;
-  static const double _rowH = 56.0;
+  static const double _headerH = AppValues.calendarHeaderHeight;
+  static const double _rowH = AppValues.calendarRowHeight;
 
   @override
   Widget build(BuildContext context) {

@@ -8,11 +8,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/services/growth_pdf_service.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../shared/components/app_bar_widget.dart';
 import '../domain/growth_record.dart';
+import '../state/growth_pdf_controller.dart';
 import '../state/growth_provider.dart';
+import '../../../core/config/growth_config.dart';
 
 // ══════════════════════════════════════════════════════════
 // 成長記録 メイン画面
@@ -34,7 +35,7 @@ import '../state/growth_provider.dart';
 // に合わせ、フィルタの影響を受けない全レコードをスワイプ対象として渡す。
 //
 // PDF書き出し: 下部の「イラストを保存」ボタンの右隣に配置したボタンから、
-// 絞込の影響を受けない全レコードを GrowthPdfService でPDF化し、
+// 絞込の影響を受けない全レコードを GrowthPdfController（state層）経由でPDF化し、
 // file_picker (FilePicker.platform.saveFile) 経由でOSの保存ダイアログから保存する。
 // このボタンは保持上限到達フラグ（growthMaxCountReachedProvider）が
 // 立っている間のみ表示する（上限に一度も到達していない間は非表示）。
@@ -69,7 +70,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
   /// Xへの1投稿で添付できる画像枚数の上限（1〜4枚）。
   /// SNS投稿ボタンの有効化条件（1件以上4件以下選択中）に使用する。
-  static const int _snsShareMaxCount = 4;
+  static const int _snsShareMaxCount = GrowthConfig.snsShareMaxCount;
 
   /// ドラッグ選択の起点インデックス（長押し中のみ非null）
   int? _dragAnchorIndex;
@@ -278,7 +279,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
     setState(() => _isGeneratingPdf = true);
     try {
-      final bytes = await GrowthPdfService.build(
+      final bytes = await GrowthPdfController.build(
         records,
         onProgress: (percent) {
           if (mounted) {
@@ -292,7 +293,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
       // 共有シートではなくOSの保存ダイアログで直接保存する。
       // モバイルではbytesを渡すとプラグイン側が選択先に書き込みまで行う。
       await FilePicker.platform.saveFile(
-        fileName: GrowthPdfService.buildFileName(DateTime.now()),
+        fileName: GrowthPdfController.buildFileName(DateTime.now()),
         // 拡張子・MIMEタイプを明示しないと、同名保存時にAndroid側が
         // 「.pdf」を拡張子として認識できず、末尾にそのまま
         // 「(1)」を付け足してしまい開けなくなる（正しくは拡張子の前に
@@ -303,8 +304,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
         bytes: bytes,
       );
     } catch (e, st) {
-      // 原因調査用の一時ログ（VSCode等のデバッグコンソールに出力）。
-      // スマホ側の表示は従来通りSnackBarのみ。
+      // 失敗原因の確認用ログ（デバッグコンソールにのみ出力）。
+      // 画面にはSnackBarのみ表示する。
       debugPrint('[GrowthPdfService] PDF生成に失敗しました: $e');
       debugPrint('$st');
       if (!mounted) return;
@@ -335,7 +336,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
     const double crossSpacing = 10;
     const double mainSpacing = 10;
-    const double childAspectRatio = 0.75;
+    const double childAspectRatio = AppValues.growthThumbAspectRatio;
     const double topPad = 12;
 
     final double contentWidth = gridBoxWidth - outerPad * 2;
@@ -471,7 +472,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                 child: Row(
                   children: [
                     Text(
-                      '${records.length} 件',
+                      '${records.length} ${AppStrings.unitItem}',
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
@@ -577,8 +578,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.theme,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey.shade300,
-                          disabledForegroundColor: Colors.grey.shade500,
+                          disabledBackgroundColor: AppColors.disabledBackground,
+                          disabledForegroundColor: AppColors.disabledText,
                           minimumSize: const Size(0, 52),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           shape: RoundedRectangleBorder(
@@ -614,8 +615,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.theme,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey.shade300,
-                          disabledForegroundColor: Colors.grey.shade500,
+                          disabledBackgroundColor: AppColors.disabledBackground,
+                          disabledForegroundColor: AppColors.disabledText,
                           minimumSize: const Size(0, 52),
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           shape: RoundedRectangleBorder(
@@ -663,9 +664,9 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
                                   backgroundColor: AppColors.theme,
                                   foregroundColor: Colors.white,
                                   disabledBackgroundColor:
-                                      Colors.grey.shade300,
+                                      AppColors.disabledBackground,
                                   disabledForegroundColor:
-                                      Colors.grey.shade500,
+                                      AppColors.disabledText,
                                   minimumSize: const Size(0, 52),
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 4),
@@ -765,7 +766,7 @@ class _GrowthEmptyState extends StatelessWidget {
             hasFilter
                 ? AppStrings.growthEmptyFiltered
                 : AppStrings.growthEmptyState,
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(color: AppColors.subText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -868,7 +869,7 @@ class _GrowthThumbnailGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // 情報エリア（日付バッジ・連番・所要時間）の高さを考慮してアスペクト比を調整
     // ⚠ 親の座標計算（_indexFromLocalPosition）と同じ値にすること
-    const double childAspectRatio = 0.75;
+    const double childAspectRatio = AppValues.growthThumbAspectRatio;
 
     return GridView.builder(
       controller: scrollController,
@@ -1040,14 +1041,14 @@ class _GrowthThumbnailCard extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(Icons.timer_outlined,
-                                size: 11, color: Colors.grey.shade500),
+                                size: 11, color: AppColors.subText),
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
                                 _durationLabel!,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey.shade500,
+                                  color: AppColors.subText,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,

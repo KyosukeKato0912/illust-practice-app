@@ -128,7 +128,7 @@ class _ModelListScreenState extends State<ModelListScreen> {
                     child: Row(
                       children: [
                         Text(
-                          '${_filtered.length} 件',
+                          '${_filtered.length} ${AppStrings.unitItem}',
                           style: TextStyle(
                               fontSize: 12, color: Colors.grey.shade600),
                         ),
@@ -265,7 +265,7 @@ class _ModelThumbnailGrid extends StatelessWidget {
 
         // 情報エリア（カテゴリ・モデル名・作者名）の高さを考慮してアスペクト比を調整
         // 画像部分が十分に見えるよう縦長に設定
-        const double childAspectRatio = 0.75;
+        const double childAspectRatio = AppValues.modelThumbAspectRatio;
 
         return GridView.builder(
           padding: EdgeInsets.fromLTRB(
@@ -319,7 +319,7 @@ class _ModelListEmptyState extends StatelessWidget {
             hasFilter
                 ? AppStrings.modelListEmptyFiltered
                 : AppStrings.modelListEmptyNoImages,
-            style: TextStyle(color: Colors.grey.shade500),
+            style: TextStyle(color: AppColors.subText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -423,14 +423,14 @@ class _ModelThumbnailCard extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(Icons.brush_outlined,
-                                size: 11, color: Colors.grey.shade500),
+                                size: 11, color: AppColors.subText),
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
                                 '${AppStrings.drawingAuthorPrefix}${model.authorName}',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey.shade500,
+                                  color: AppColors.subText,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,

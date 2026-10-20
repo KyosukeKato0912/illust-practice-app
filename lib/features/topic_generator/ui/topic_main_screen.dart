@@ -13,8 +13,6 @@ import '../state/topic_provider.dart';
 // ══════════════════════════════════════════════════════════
 // お題ジェネレーター メイン画面
 //
-// 「企画書_ver3.xlsx」の UI設計_お題ジェネレーター シートに準拠。
-//
 // 1〜3の選択項目は ListWheelScrollView によるスロット風の縦リールで
 // 表示する（TopicConfig の仮データ・各3件）。
 //   ・決定ボタン：現在3つのリールが示している組み合わせでお題を確定
@@ -154,7 +152,7 @@ class _TopicMainScreenState extends ConsumerState<TopicMainScreen> {
                 _TopicArea(topic: topic, onCopy: _copy),
                 // テーマ欄（お題エリア）と選択欄（1〜3のリール）の仕切り
                 const SizedBox(height: 16),
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
+                Divider(height: 1, thickness: 1, color: AppColors.border),
                 const SizedBox(height: 16),
                 _TopicReel(
                   label: AppStrings.topicSelector1Label,
@@ -300,7 +298,7 @@ class _TopicReelState extends State<_TopicReel> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -318,7 +316,7 @@ class _TopicReelState extends State<_TopicReel> {
             width: 1,
             height: itemExtent * 3,
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            color: Colors.grey.shade300,
+            color: AppColors.border,
           ),
           Expanded(
             child: Stack(
@@ -367,7 +365,7 @@ class _TopicReelState extends State<_TopicReel> {
                     height: itemExtent,
                     decoration: BoxDecoration(
                       border: Border.symmetric(
-                        horizontal: BorderSide(color: Colors.grey.shade300),
+                        horizontal: BorderSide(color: AppColors.border),
                       ),
                     ),
                   ),

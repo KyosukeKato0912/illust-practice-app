@@ -81,7 +81,7 @@ class _DrawingSettingsScreenState extends State<DrawingSettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('読み込みに失敗しました: $e')),
+        SnackBar(content: Text('${AppStrings.drawingSettingsLoadErrorPrefix}$e')),
       );
     }
   }
@@ -249,7 +249,7 @@ class _DrawingSettingsScreenState extends State<DrawingSettingsScreen> {
                               ? AppStrings.drawingLoopOnDesc
                               : AppStrings.drawingLoopOffDesc,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                              fontSize: 12, color: AppColors.subText),
                           overflow: TextOverflow.visible,
                         ),
                         secondary: Icon(
@@ -281,7 +281,7 @@ class _DrawingSettingsScreenState extends State<DrawingSettingsScreen> {
                               ? AppStrings.drawingShuffleOnDesc
                               : AppStrings.drawingShuffleOffDesc,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                              fontSize: 12, color: AppColors.subText),
                           overflow: TextOverflow.visible,
                         ),
                         secondary: Icon(
@@ -432,7 +432,7 @@ class _MaxWorkTimeSetting extends StatelessWidget {
 
   String get _displayLabel => _isUnlimited
       ? AppStrings.drawingSettingsMaxTimeUnlimited
-      : '$_minutes 分';
+      : '$_minutes ${AppStrings.unitMinute}';
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +450,7 @@ class _MaxWorkTimeSetting extends StatelessWidget {
           subtitle: Text(
             _isUnlimited ? AppStrings.drawingMaxTimeUnlimitedDesc : AppStrings.drawingMaxTimeLimitedDesc,
             style:
-                TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                TextStyle(fontSize: 12, color: AppColors.subText),
             overflow: TextOverflow.visible,
           ),
           secondary: Icon(Icons.all_inclusive,
@@ -508,11 +508,11 @@ class _MaxWorkTimeSetting extends StatelessWidget {
                 onChanged(v.round() * 60),
           ),
           Text(
-            '${AppValues.drawingMaxWorkTimeMinMin} 分〜'
-            '${AppValues.drawingMaxWorkTimeMaxMin} 分'
-            '（${AppValues.drawingMaxWorkTimeStepMin} 分単位）',
+            '${AppValues.drawingMaxWorkTimeMinMin} ${AppStrings.unitMinute}〜'
+            '${AppValues.drawingMaxWorkTimeMaxMin} ${AppStrings.unitMinute}'
+            '（${AppValues.drawingMaxWorkTimeStepMin} ${AppStrings.unitMinute}${AppStrings.unitStep}）',
             style:
-                TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                TextStyle(fontSize: 12, color: AppColors.subText),
           ),
           const SizedBox(height: 4),
         ],
@@ -580,8 +580,8 @@ class _DurationSetting extends StatelessWidget {
         Text(
           '${AppValues.drawingDurationMinSec.toDisplayDuration()}〜'
           '${AppValues.drawingDurationMaxSec.toDisplayDuration()}'
-          '（${AppValues.drawingDurationStepSec.toDisplayDuration()}単位）',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          '（${AppValues.drawingDurationStepSec.toDisplayDuration()}${AppStrings.unitStep}）',
+          style: TextStyle(fontSize: 12, color: AppColors.subText),
         ),
       ],
     );
@@ -639,13 +639,13 @@ class _CategorySelector extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${selectedCategories.length} / ${categories.length} カテゴリ',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  '${selectedCategories.length} / ${categories.length} ${AppStrings.unitCategory}',
+                  style: TextStyle(fontSize: 12, color: AppColors.subText),
                   textAlign: TextAlign.right,
                 ),
                 Text(
-                  '（$selectedModelsCount 枚）',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  '（$selectedModelsCount ${AppStrings.unitSheet}）',
+                  style: TextStyle(fontSize: 12, color: AppColors.subText),
                   textAlign: TextAlign.right,
                 ),
               ],
@@ -661,7 +661,7 @@ class _CategorySelector extends StatelessWidget {
             value: selected,
             activeColor: AppColors.theme,
             title: Text(categoryDef.name),
-            subtitle: Text('$count 枚', style: const TextStyle(fontSize: 11)),
+            subtitle: Text('$count ${AppStrings.unitSheet}', style: const TextStyle(fontSize: 11)),
             secondary: Icon(
               Icons.folder_outlined,
               color: selected ? AppColors.theme : Colors.grey,

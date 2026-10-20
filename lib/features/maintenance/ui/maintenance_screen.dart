@@ -11,6 +11,7 @@ import '../../../shared/testdata/growth_testdata.dart';
 import '../../growth/state/growth_practice_log_provider.dart';
 import '../../growth/state/growth_provider.dart';
 import '../../habit/state/habit_practice_provider.dart';
+import '../../onboarding/state/onboarding_controller.dart';
 
 // ══════════════════════════════════════════════════════════
 // メンテナンス画面
@@ -271,6 +272,40 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
     );
   }
 
+  /// 初回オンボーディングの既読フラグを全てクリアする。
+  /// 画面上の設定（AppBarの「初期状態に戻す」・「決定」）とは独立して、
+  /// 確認ダイアログで了承された時点で即時に実行する。
+  Future<void> _resetOnboarding() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppStrings.maintenanceOnboardingResetButton,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(AppStrings.maintenanceOnboardingResetMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(AppStrings.dialogCancel,
+                style: const TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppStrings.dialogReset),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await OnboardingController.resetAll();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppStrings.maintenanceOnboardingResetDone)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // メンテナンス画面が保存する値ではなく、実際に今動作に使われている
@@ -343,7 +378,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                               ? AppStrings.maintenanceMaxCountReachedOnDesc
                               : AppStrings.maintenanceMaxCountReachedOffDesc,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                              fontSize: 12, color: AppColors.subText),
                         ),
                       ),
                       const Divider(height: 28),
@@ -437,7 +472,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                               ? AppStrings.maintenanceShowDebugDataCountOnDesc
                               : AppStrings.maintenanceShowDebugDataCountOffDesc,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                              fontSize: 12, color: AppColors.subText),
                         ),
                       ),
                     ],
@@ -541,6 +576,33 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── 初回オンボーディング（「決定」とは独立・即時実行） ──
+                _MaintenanceSectionCard(
+                  title: AppStrings.maintenanceOnboardingSectionTitle,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        AppStrings.maintenanceOnboardingDesc,
+                        style: const TextStyle(fontSize: 13, height: 1.5),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.theme,
+                          side: const BorderSide(color: AppColors.theme),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _resetOnboarding,
+                        child: Text(AppStrings.maintenanceOnboardingResetButton),
                       ),
                     ],
                   ),

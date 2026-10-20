@@ -1,3 +1,5 @@
+import '../constants/app_values.dart';
+
 // ══════════════════════════════════════════════════════════
 // 成長記録 コンフィグ
 //
@@ -36,5 +38,8 @@ abstract class GrowthConfig {
   /// 継続日数のマイルストーン特別メッセージを表示する連続日数。
   /// アップロード完了画面で、今日を含めた連続アップロード日数が
   /// ちょうどこの値に達した回のみ表示する。
-  static const int streakMilestoneDays = 21;
+  static const int streakMilestoneDays = AppValues.streakTargetDays;
+
+  /// SNS共有（共有シート）に一度に渡せる画像の最大枚数。
+  static const int snsShareMaxCount = 4;
 }

@@ -1,3 +1,5 @@
+import '../../../core/constants/app_strings.dart';
+
 // ══════════════════════════════════════════════════════════
 // 復帰促進通知の空白期間の選択肢
 // ══════════════════════════════════════════════════════════
@@ -9,9 +11,9 @@ enum HabitComebackPeriod {
   /// 表示名
   String get label {
     switch (this) {
-      case HabitComebackPeriod.threeDays: return '3日';
-      case HabitComebackPeriod.oneWeek:   return '1週間';
-      case HabitComebackPeriod.oneMonth:  return '1か月';
+      case HabitComebackPeriod.threeDays: return AppStrings.habitComebackThreeDays;
+      case HabitComebackPeriod.oneWeek:   return AppStrings.habitComebackOneWeek;
+      case HabitComebackPeriod.oneMonth:  return AppStrings.habitComebackOneMonth;
     }
   }
 

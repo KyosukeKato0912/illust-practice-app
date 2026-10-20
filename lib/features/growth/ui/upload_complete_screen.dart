@@ -5,12 +5,13 @@ import '../../../core/config/habit_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/services/growth_pdf_service.dart';
 import '../../../core/utils/date_utils.dart';
 import '../domain/growth_record.dart';
 import '../domain/growth_streak_utils.dart';
+import '../state/growth_pdf_controller.dart';
 import '../state/growth_practice_log_provider.dart';
 import '../state/growth_provider.dart';
+import '../../../core/constants/app_values.dart';
 
 // ══════════════════════════════════════════════════════════
 // アップロード完了画面
@@ -160,7 +161,7 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
 
     setState(() => _isGeneratingPdf = true);
     try {
-      final bytes = await GrowthPdfService.build(
+      final bytes = await GrowthPdfController.build(
         records,
         onProgress: (percent) {
           if (mounted) {
@@ -172,7 +173,7 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
       );
       if (!mounted) return;
       await FilePicker.platform.saveFile(
-        fileName: GrowthPdfService.buildFileName(DateTime.now()),
+        fileName: GrowthPdfController.buildFileName(DateTime.now()),
         type: FileType.custom,
         allowedExtensions: ['pdf'],
         bytes: bytes,
@@ -335,8 +336,8 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.theme,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      disabledForegroundColor: Colors.grey.shade500,
+                      disabledBackgroundColor: AppColors.disabledBackground,
+                      disabledForegroundColor: AppColors.disabledText,
                       minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -381,7 +382,9 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
 
               // ── 継続カレンダー（今日が属する月） ────────────
               Text(
-                '${AppStrings.growthCalendarTitle}（$currentYear年$currentMonth月）',
+                '${AppStrings.growthCalendarTitle}'
+                '（$currentYear${AppStrings.unitYear}'
+                '$currentMonth${AppStrings.unitMonth}）',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
@@ -497,8 +500,8 @@ class _GrowthMonthCalendar extends StatelessWidget {
     required this.onToggleTooltip,
   });
 
-  static const double _headerH = 24.0;
-  static const double _weekRowH = 56.0;
+  static const double _headerH = AppValues.calendarHeaderHeight;
+  static const double _weekRowH = AppValues.calendarRowHeight;
 
   @override
   Widget build(BuildContext context) {

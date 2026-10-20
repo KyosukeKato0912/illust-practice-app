@@ -148,7 +148,7 @@ abstract class AppStrings {
   // メリハリタイマーセット選択
   static const String habitModePreset = '基本セット';
   static const String habitModeCustom = '自由に設定';
-  static const String habitPresetDesc = '25分作業 + 5分休憩（ポモドーロ標準）';
+  static const String habitPresetDesc = '25分作業 + 5分休憩';
   static const String habitCustomDesc = '作業時間と休憩時間を自由に設定';
 
   // 作業開始促進通知
@@ -463,6 +463,19 @@ abstract class AppStrings {
       '画面上の全ての設定を初期状態（リリース時の設定値）に戻し、即座に反映します。よろしいですか？';
   static const String maintenanceResetDone = '初期状態に戻しました';
 
+  /// セクション：初回オンボーディングを初回状態（未表示）に戻す
+  /// 「決定」ボタンとは無関係に、押した時点で即時に実行される。
+  static const String maintenanceOnboardingSectionTitle = '初回オンボーディング';
+  static const String maintenanceOnboardingDesc =
+      '各機能の初回案内を未表示の状態に戻します。\n'
+      '次に各機能を開いたとき（ホームはアプリの再起動後）に、もう一度案内が表示されます。\n'
+      '「決定」を押さなくても、ボタンを押した時点で即時に実行されます。';
+  static const String maintenanceOnboardingResetButton = '初回状態に戻す';
+  static const String maintenanceOnboardingResetMessage =
+      'ホーム・X秒ドローイング・お題ジェネレーター・成長記録・習慣化サポートの'
+      '初回案内を、すべて未表示の状態に戻します。よろしいですか？';
+  static const String maintenanceOnboardingResetDone = '初回状態に戻しました';
+
   // ── お題ジェネレーター ──────────────────────
   static const String topicHistoryTitle = 'お題履歴';
 
@@ -487,4 +500,92 @@ abstract class AppStrings {
   static const String topicHistoryDeleteDialogMessage =
       'この履歴を削除します。この操作は取り消せません。';
   static const String topicHistoryDeleteDialogConfirm = '削除';
+
+  // ── 単位表記 ────────────────────────────────────────────
+  // 数値の後ろに付ける単位。'$n ${AppStrings.unitMinute}' のように組み立てて使う。
+  static const String unitSecond = '秒';
+  static const String unitMinute = '分';
+  static const String unitSheet = '枚';
+  static const String unitItem = '件';
+  static const String unitCategory = 'カテゴリ';
+  static const String unitStep = '単位';
+  static const String unitYear = '年';
+  static const String unitMonth = '月';
+
+  // ── 習慣化サポート：復帰促進通知の期間名 ──────────────
+  static const String habitComebackThreeDays = '3日';
+  static const String habitComebackOneWeek = '1週間';
+  static const String habitComebackOneMonth = '1か月';
+
+  // ── その他の画面文言 ────────────────────────────────────
+  static const String bannerAdLabel = '広告';
+  static const String habitWeekPickerHelp = '週を選択してください';
+  static const String drawingSettingsLoadErrorPrefix = '読み込みに失敗しました: ';
+
+  // ── 成長記録：保存ファイル名の書式 ──────────────────────
+  // 例：2026-06-01-2枚目-3分.png
+  static const String growthFileNameSerialSuffix = '枚目';
+  static const String growthFileNameMinuteSuffix = '分';
+
+  // ── 初回オンボーディング ────────────────────────────────
+  // 各機能を初めて開いたときに1度だけ表示する案内（各2画面）。
+  // 設定値の範囲など、変更されうる数値は文言に含めない。
+  static const String onboardingSkip = 'スキップ';
+  static const String onboardingNext = '次へ';
+  static const String onboardingStart = 'はじめる';
+
+  // ホーム
+  static const String onboardingHomeP1Title = 'イラスト練習をサポートします';
+  static const String onboardingHomeP1Body =
+      '描く・考える・記録する・続ける。\n'
+      '毎日の練習に役立つ機能を\n'
+      'ひとつにまとめたアプリです。';
+  static const String onboardingHomeP2Title = 'ホームから機能を選びます';
+  static const String onboardingHomeP2Body =
+      'ホーム画面のボタンから、使いたい機能を選んでください。\n'
+      '各機能を初めて開くときに、簡単な使い方をご案内します。';
+
+  // X秒ドローイング
+  static const String onboardingDrawingP1Title = 'X秒ドローイングとは';
+  static const String onboardingDrawingP1Body =
+      'モデルのポーズ画像が、設定した時間ごとに自動で切り替わります。\n'
+      '短い時間で形をとらえる、クロッキー練習ができます。';
+  static const String onboardingDrawingP2Title = '自分に合わせて設定できます';
+  static const String onboardingDrawingP2Body =
+      '画像の切り替え時間や、表示するカテゴリを選べます。\n'
+      'ループ再生、シャッフル、最大作業時間も設定できます。';
+
+  // お題ジェネレーター
+  static const String onboardingTopicP1Title = 'お題で描くきっかけをつくります';
+  static const String onboardingTopicP1Body =
+      '「何を描こう」と迷ったときに使います。\n'
+      'シチュエーション、構図、制限時間など3つの項目から選んで'
+      '「決定」を押すと、お題ができあがります。';
+  static const String onboardingTopicP2Title = 'ランダムや履歴も使えます';
+  static const String onboardingTopicP2Body =
+      '「ランダム」を押すと、お題が自動で決まります。\n'
+      '作ったお題はコピーでき、履歴から選び直すこともできます。';
+
+  // 成長記録
+  static const String onboardingGrowthP1Title = '描いたイラストを記録します';
+  static const String onboardingGrowthP1Body =
+      '描いたイラストを写真やファイルから追加すると、\n'
+      '成長記録の一覧にたまっていきます。\n'
+      '作業時間も、任意で記録できます。';
+  static const String onboardingGrowthP2Title = '続けるほど成長が見えてきます';
+  static const String onboardingGrowthP2Body =
+      '継続カレンダーで練習した日を確認でき、\n'
+      '連続で続けるとお祝いメッセージが届きます。\n'
+      '一定の枚数がたまると、PDFに書き出せるようになります。';
+
+  // 習慣化サポート
+  static const String onboardingHabitP1Title = 'メリハリタイマー';
+  static const String onboardingHabitP1Body =
+      '作業と休憩を自動で切り替えるタイマーです。\n'
+      'メリハリをつけて、集中して取り組めます。\n'
+      '基本セットか、自由な時間設定を選べます。';
+  static const String onboardingHabitP2Title = '継続カレンダーと通知で習慣に';
+  static const String onboardingHabitP2Body =
+      '成長記録にイラストを追加した日が、継続カレンダーに記録されます。\n'
+      '作業開始のお知らせや、練習が空いたときの通知も設定できます。';
 }

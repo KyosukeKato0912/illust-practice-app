@@ -157,7 +157,7 @@ class _DrawingInitialScreenState extends State<DrawingInitialScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isReady
                               ? AppColors.theme
-                              : Colors.grey.shade300,
+                              : AppColors.disabledBackground,
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(
@@ -326,7 +326,7 @@ class DrawingSettingsSummaryCard extends StatelessWidget {
               ),
               _SummaryChip(
                 icon: Icons.image_outlined,
-                label: '$imageCount 枚',
+                label: '$imageCount ${AppStrings.unitSheet}',
               ),
               _SummaryChip(
                 icon: Icons.folder_outlined,

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 
 // ══════════════════════════════════════════════════════════
 // バナー広告ウィジェット
@@ -102,13 +104,13 @@ class _DummyBannerAd extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.ad_units_outlined,
-              size: 16, color: Colors.grey.shade500),
+              size: 16, color: AppColors.subText),
           const SizedBox(width: 6),
           Text(
-            '広告',
+            AppStrings.bannerAdLabel,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade500,
+              color: AppColors.subText,
               letterSpacing: 1,
             ),
           ),

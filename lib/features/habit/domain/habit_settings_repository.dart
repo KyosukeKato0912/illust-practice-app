@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'habit_settings.dart';
+import '../../../core/constants/app_values.dart';
 
 // ══════════════════════════════════════════════════════════
 // 習慣化サポート 設定の永続化リポジトリ
@@ -22,17 +23,17 @@ class HabitSettingsRepository {
 
   // ── デフォルト値（基本セット）──────────────────────────
   static const bool defaultIsPreset      = true;
-  static const int  defaultTimerMinutes  = 25;
-  static const int  defaultBreakMinutes  = 5;
+  static const int  defaultTimerMinutes  = AppValues.habitDefaultTimerMinutes;
+  static const int  defaultBreakMinutes  = AppValues.habitDefaultBreakMinutes;
 
   // ── 自由設定のデフォルト値 ────────────────────────────
-  static const int defaultCustomTimerMinutes = 10;
-  static const int defaultCustomBreakMinutes = 5;
+  static const int defaultCustomTimerMinutes = AppValues.habitDefaultCustomTimerMinutes;
+  static const int defaultCustomBreakMinutes = AppValues.habitDefaultCustomBreakMinutes;
 
   // ── 作業開始促進通知のデフォルト値 ────────────────────
   static const bool defaultReminderEnabled = false;
-  static const int  defaultReminderHour    = 12;
-  static const int  defaultReminderMinute  = 0;
+  static const int  defaultReminderHour    = AppValues.habitDefaultReminderHour;
+  static const int  defaultReminderMinute  = AppValues.habitDefaultReminderMinute;
 
   // ── 復帰促進通知のデフォルト値 ────────────────────────
   static const bool defaultComebackEnabled = false;

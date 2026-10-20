@@ -301,7 +301,7 @@ class _FullImageScreenState extends State<FullImageScreen> {
                   AppStrings.drawingPinchHint,
                   textAlign: TextAlign.center,
                   style:
-                      TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      TextStyle(color: AppColors.subText, fontSize: 12),
                 ),
               ),
             ],
@@ -377,8 +377,8 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: enabled ? color : Colors.grey.shade300,
-        foregroundColor: enabled ? Colors.white : Colors.grey.shade500,
+        backgroundColor: enabled ? color : AppColors.disabledBackground,
+        foregroundColor: enabled ? Colors.white : AppColors.disabledText,
         minimumSize: const Size(0, 44),
         padding: EdgeInsets.zero,
         shape: RoundedRectangleBorder(

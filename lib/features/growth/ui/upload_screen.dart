@@ -273,8 +273,8 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.theme,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  disabledForegroundColor: Colors.grey.shade500,
+                  disabledBackgroundColor: AppColors.disabledBackground,
+                  disabledForegroundColor: AppColors.disabledText,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
