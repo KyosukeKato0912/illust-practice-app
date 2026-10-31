@@ -568,7 +568,7 @@ abstract class AppStrings {
 
   // ホーム
   static const String onboardingHomeP1Title = 'イラスト練習をサポートします';
-  static const String onboardingHomeP1Body = '毎日3分、小さな練習から大きな開花へ。n'
+  static const String onboardingHomeP1Body = '毎日3分、小さな練習から大きな開花へ。\n'
       '描く・考える・記録する・続ける。\n'
       '毎日の練習に役立つ機能を\n'
       'ひとつにまとめたアプリです。';
