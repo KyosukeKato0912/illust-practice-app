@@ -118,119 +118,124 @@ class _DrawingInitialScreenState extends State<DrawingInitialScreen> {
                   (constraints.maxWidth * AppValues.outerPadRatio)
                       .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: outerPad, vertical: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.slideshow,
-                          size: 100, color: AppColors.theme),
-                      const SizedBox(height: 24),
-                      Text(
-                        AppStrings.drawingStartPrompt,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: outerPad, vertical: 32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.slideshow,
+                              size: 100, color: AppColors.theme),
+                          const SizedBox(height: 24),
+                          Text(
+                            AppStrings.drawingStartPrompt,
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            AppStrings.drawingStartDescription,
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // ── 設定サマリーカード ──────────────────
+                          if (isReady && data != null)
+                            DrawingSettingsSummaryCard(
+                              models: data.models,
+                              saved: data.saved,
+                            ),
+
+                          const SizedBox(height: 24),
+
+                          // ── すぐに開始 ──────────────────────────
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isReady
+                                  ? AppColors.theme
+                                  : AppColors.disabledBackground,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 52),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: isReady
+                                ? () => _startWithSavedSettings(data!)
+                                : null,
+                            icon: isReady
+                                ? const Icon(Icons.play_arrow)
+                                : const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                            label: Text(
+                              isReady
+                                  ? AppStrings.drawingStartButton
+                                  : AppStrings.drawingLoadingButton,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ── モデル一覧 ──────────────────────────
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.theme,
+                              side: const BorderSide(color: AppColors.theme),
+                              minimumSize: const Size(double.infinity, 52),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.push(
+                              context,
+                              AppRouter.drawingModelList(),
+                            ),
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: Text(
+                              AppStrings.drawingModelListButton,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ── 設定 ────────────────────────────────
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.theme,
+                              side: const BorderSide(color: AppColors.theme),
+                              minimumSize: const Size(double.infinity, 52),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                AppRouter.drawingSettings(),
+                              );
+                              await _refreshSettings();
+                            },
+                            icon: const Icon(Icons.settings),
+                            label: Text(
+                              AppStrings.drawingSettingsButton,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        AppStrings.drawingStartDescription,
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // ── 設定サマリーカード ──────────────────
-                      if (isReady && data != null)
-                        DrawingSettingsSummaryCard(
-                          models: data.models,
-                          saved: data.saved,
-                        ),
-
-                      const SizedBox(height: 24),
-
-                      // ── すぐに開始 ──────────────────────────
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isReady
-                              ? AppColors.theme
-                              : AppColors.disabledBackground,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: isReady
-                            ? () => _startWithSavedSettings(data!)
-                            : null,
-                        icon: isReady
-                            ? const Icon(Icons.play_arrow)
-                            : const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              ),
-                        label: Text(
-                          isReady
-                              ? AppStrings.drawingStartButton
-                              : AppStrings.drawingLoadingButton,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // ── モデル一覧 ──────────────────────────
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.theme,
-                          side: const BorderSide(color: AppColors.theme),
-                          minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          AppRouter.drawingModelList(),
-                        ),
-                        icon: const Icon(Icons.photo_library_outlined),
-                        label: Text(
-                          AppStrings.drawingModelListButton,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // ── 設定 ────────────────────────────────
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.theme,
-                          side: const BorderSide(color: AppColors.theme),
-                          minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            AppRouter.drawingSettings(),
-                          );
-                          await _refreshSettings();
-                        },
-                        icon: const Icon(Icons.settings),
-                        label: Text(
-                          AppStrings.drawingSettingsButton,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );

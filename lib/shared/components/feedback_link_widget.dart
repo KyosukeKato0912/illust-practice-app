@@ -5,9 +5,10 @@ import '../../core/constants/app_strings.dart';
 import '../../core/config/app_config.dart';
 
 // ══════════════════════════════════════════════════════════
-// フィードバックリンクウィジェット（Webサンプル版専用）
+// フィードバックリンクウィジェット
 //
-// AppConfig.showFeedbackLink が false の場合は SizedBox.shrink() を返す。
+// 全ての版に機能として残し、表示/非表示のみ AppConfig.showFeedbackLink で切り替える。
+// false の場合は SizedBox.shrink() を返す。
 // 正式リリース時はフラグを false にするだけで全画面から非表示になる。
 // ══════════════════════════════════════════════════════════
 class FeedbackLinkWidget extends StatelessWidget {

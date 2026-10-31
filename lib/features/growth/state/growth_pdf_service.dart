@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import '../../../core/utils/logger.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -197,7 +197,7 @@ abstract class GrowthPdfService {
       if (bytes == null || bytes.isEmpty) return null;
       return pw.MemoryImage(bytes);
     } catch (e) {
-      debugPrint('[GrowthPdfService] 画像の縮小に失敗しました: $path ($e)');
+      AppLogger.log('[GrowthPdfService] 画像の縮小に失敗しました: $path ($e)');
       return null;
     }
   }

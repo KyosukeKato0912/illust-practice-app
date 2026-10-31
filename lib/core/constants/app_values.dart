@@ -42,6 +42,13 @@ abstract class AppValues {
   ///   同じ値を使うこと。
   static const double growthThumbAspectRatio = 0.75;
 
+  /// 成長記録サムネイルのデコード解像度の余裕係数。
+  /// セルの長辺(論理px)×devicePixelRatio に掛けて Image.file の cacheWidth を決める。
+  /// BoxFit.cover で横長の写真を縦長気味のセルに敷き詰める場合、セルの長辺より
+  /// 横幅を大きくデコードしないとぼやけるため、1.5倍の余裕を持たせている。
+  /// （原寸デコードによるメモリ逼迫を避けるための上限であり、画質を落とす値ではない）
+  static const double growthThumbDecodeOverscan = 1.5;
+
   /// X秒ドローイング モデル一覧のサムネイルの縦横比（幅:高さ）
   static const double modelThumbAspectRatio = 0.75;
 
@@ -88,10 +95,6 @@ abstract class AppValues {
   /// ドットインジケーターを表示する最大枚数
   static const int drawingDotIndicatorMaxCount = 20;
 
-  // ── アセットパス ────────────────────────────────────────
-  /// ポーズモデル画像の格納フォルダ
-  static const String modelAssetFolder = 'assets/images/models/';
-
   // ── 習慣化サポート ───────────────────────────────────────
   /// 設定：メリハリタイマー 作業時間の下限（分）
   static const int habitTimerMinMinutes = 1;
@@ -127,8 +130,27 @@ abstract class AppValues {
   /// 作業開始促進通知の既定の時刻（分）
   static const int habitDefaultReminderMinute = 0;
 
+  // ── 成長記録 ──────────────────────────────────────────
+  /// 保持できる成長記録の最大枚数（リリース時の初期値）。
+  /// これを超えてアップロードされた場合、最も古いものから自動削除する。
+  ///
+  /// ⚠ 実際に判定・削除処理で使われる値は、この定数そのものではなく
+  ///   [growthMaxRecordCountProvider]（features/growth/state/growth_provider.dart）
+  ///   経由の値。メンテナンス画面から検証用に上書きできるようにするため、
+  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
+  ///   必ずこの定数の値へ戻る。
+  static const int growthMaxRecordCount = 300;
+
+  /// SNS共有（共有シート）に一度に渡せる画像の最大枚数。
+  static const int growthSnsShareMaxCount = 4;
+
+  /// メンテナンス画面「通知テスト」で、通知を送るまでの待ち時間（秒）。
+  /// 画面の説明文・ボタン名の「1分後」と合わせること。
+  static const int maintenanceTestNotificationDelaySeconds = 60;
+
   /// 継続カレンダー：連続記録の目標日数（21日）。
-  /// 濃い黄色への切り替えと、成長記録の継続お祝いメッセージの基準となる。
+  /// 濃い黄色への切り替えと、成長記録の継続お祝いメッセージ
+  /// （アップロード完了画面で、今日を含めた連続日数がちょうどこの値に達した回のみ表示）の基準となる。
   static const int streakTargetDays = 21;
 
   /// 継続カレンダー：連続記録が濃い黄色になる日数のしきい値

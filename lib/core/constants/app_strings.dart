@@ -5,7 +5,15 @@
 // ══════════════════════════════════════════════════════════
 abstract class AppStrings {
   // ── アプリ共通 ──────────────────────────────────────────
-  static const String appTitle = 'イラスト練習支援アプリ(仮)';
+  static const String appTitle = 'Illust Bloom';
+
+  // ── 起動エラー（データベース初期化失敗） ────────────────
+  static const String startupErrorTitle = '起動できませんでした';
+  static const String startupErrorMessage =
+      'データの準備に失敗しました。\n'
+      'もう一度お試しください。改善しない場合はアプリを再起動してください。';
+  static const String startupErrorRetry = '再試行';
+  static const String startupErrorRetryFailed = '再試行しましたが、まだ準備できません';
 
   // ── ホーム画面 ──────────────────────────────────────────
   static const String homeTitle = 'メイン';
@@ -333,7 +341,7 @@ abstract class AppStrings {
   static const String growthUploadCompleteBackButton = '成長記録メインへ';
   static const String growthUploadCompleteContinueButton = '続けて追加';
 
-  /// 今日を含めた連続アップロード日数が [GrowthConfig.streakMilestoneDays]
+  /// 今日を含めた連続アップロード日数が [AppValues.streakTargetDays]
   /// （21日＝3週間）にちょうど到達したアップロード完了時のみ表示する
   /// 特別メッセージ。保持上限到達メッセージと同時に発生する場合は、
   /// このメッセージ → 空行1つ（改行2つ） → 保持上限到達メッセージの順で
@@ -344,7 +352,7 @@ abstract class AppStrings {
       '引き続き頑張りましょう';
 
   /// 保持上限枚数にちょうど到達したアップロード完了時のみ表示する
-  /// 特別メッセージ（{count} は [GrowthConfig.maxRecordCount] に置換）
+  /// 特別メッセージ（{count} は [AppValues.growthMaxRecordCount] に置換）
   static const String growthUploadCompleteMaxCountMessage =
       '{count}枚達成おめでとうございます！\nここまで続けたあなたはとても立派です\n'
       'これまでの努力の証がPDFに残せるようになりました\n'
@@ -379,7 +387,7 @@ abstract class AppStrings {
   static const String dialogDecide = '決定';
   static const String dialogReset = 'リセット';
 
-  // ── Webサンプル版：フィードバックリンク ─────────────────
+  // ── フィードバックリンク ────────────────────────────────
   /// ホーム画面に表示するリンクラベル
   static const String feedbackLinkLabelHome = 'ご意見・ご感想はこちら';
 
@@ -476,6 +484,23 @@ abstract class AppStrings {
       '初回案内を、すべて未表示の状態に戻します。よろしいですか？';
   static const String maintenanceOnboardingResetDone = '初回状態に戻しました';
 
+  // ── メンテナンス画面：通知テスト ────────────────────────
+  static const String maintenanceNotificationSectionTitle = '通知テスト';
+  static const String maintenanceNotificationDesc =
+      '通知を1分後に1回だけ送ります（「決定」は不要で、押した時点で登録されます）。\n'
+      '実際の通知設定（毎日の作業開始促進・復帰促進の予約）には影響しません。\n'
+      '登録後はホーム画面などに戻って、通知の文言・チャンネル・タップ時の動作を確認してください。\n'
+      '復帰促進は時刻の保証がない方式で登録されるため、届くまで数分かかることがあります。';
+  static const String maintenanceNotificationReminderButton = '作業開始促進通知を1分後に送る';
+  static const String maintenanceNotificationComebackButton = '復帰促進通知を1分後に送る';
+  static const String maintenanceNotificationScheduledSuffix = ' に通知を送ります';
+  static const String maintenanceNotificationExactOn = '（正確なアラーム：有効）';
+  static const String maintenanceNotificationExactOff = '（正確なアラーム：無効）';
+  static const String maintenanceNotificationPermissionDenied =
+      '通知が許可されていません。端末の設定で通知を許可してください';
+  static const String maintenanceNotificationFailed = '通知の登録に失敗しました';
+  static const String maintenanceNotificationUnsupported = 'この環境（Web）では利用できません';
+
   // ── お題ジェネレーター ──────────────────────
   static const String topicHistoryTitle = 'お題履歴';
 
@@ -533,10 +558,19 @@ abstract class AppStrings {
   static const String onboardingSkip = 'スキップ';
   static const String onboardingNext = '次へ';
   static const String onboardingStart = 'はじめる';
+  /// ヘルプからオンボーディングを見返すときの、スキップ／最終ページのボタン文言
+  static const String onboardingClose = '閉じる';
+
+  // ── ヘルプ（オンボーディングの再確認）───────────────────
+  static const String helpButtonTooltip = 'ヘルプ';
+  static const String helpTitle = 'ヘルプ';
+  static const String helpDescription = '各機能の使い方の案内を、いつでも見返せます。';
+  static const String helpTopicHome = 'このアプリについて';
 
   // ホーム
   static const String onboardingHomeP1Title = 'イラスト練習をサポートします';
   static const String onboardingHomeP1Body =
+      '毎日3分、描けば進む。\n'
       '描く・考える・記録する・続ける。\n'
       '毎日の練習に役立つ機能を\n'
       'ひとつにまとめたアプリです。';
@@ -576,7 +610,10 @@ abstract class AppStrings {
   static const String onboardingGrowthP2Body =
       '継続カレンダーで練習した日を確認でき、\n'
       '連続で続けるとお祝いメッセージが届きます。\n'
-      '一定の枚数がたまると、PDFに書き出せるようになります。';
+      '一定の枚数がたまると、PDFに書き出せるようになります。\n'
+      '\n'
+      '※保存できる枚数には上限があり、\n'
+      '上限を超えると古いものから自動で削除されます。';
 
   // 習慣化サポート
   static const String onboardingHabitP1Title = 'メリハリタイマー';

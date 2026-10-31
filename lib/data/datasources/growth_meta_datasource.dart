@@ -7,7 +7,7 @@ import 'package:hive/hive.dart';
 // メタ情報を保持する。
 //
 // 現在の用途：
-//   ・保持上限枚数（GrowthConfig.maxRecordCount）に一度でも到達した
+//   ・保持上限枚数（AppValues.growthMaxRecordCount）に一度でも到達した
 //     ことがあるかどうかのフラグ。アップロード完了画面の特別メッセージ
 //     を「初めて上限に達した回」だけ表示するために使う。
 //     削除によって件数が上限を下回り、その後再度上限に達しても

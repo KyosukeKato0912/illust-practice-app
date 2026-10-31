@@ -15,7 +15,9 @@ import '../../features/habit/ui/habit_settings_screen.dart';
 import '../../features/habit/ui/habit_timer_screen.dart';
 import '../../features/home/ui/home_screen.dart';
 import '../../features/maintenance/ui/maintenance_screen.dart';
+import '../../features/onboarding/ui/help_screen.dart';
 import '../../features/onboarding/ui/onboarding_gate_widget.dart';
+import '../../features/onboarding/ui/onboarding_screen.dart';
 import '../../features/topic_generator/ui/topic_history_screen.dart';
 import '../../features/topic_generator/ui/topic_main_screen.dart';
 import '../../shared/patterns/full_image_screen.dart';
@@ -95,6 +97,26 @@ abstract class AppRouter {
         builder: (_) => const OnboardingGateWidget(
           topic: OnboardingTopic.habit,
           child: HabitMainScreen(),
+        ),
+      );
+
+  /// ヘルプ画面（初回オンボーディングの見返し一覧）へのルート
+  ///
+  /// [HomeScreen] の AppBar にあるヘルプボタンから呼び出す。
+  static Route<void> help() => MaterialPageRoute(
+        builder: (_) => const HelpScreen(),
+      );
+
+  /// [topic] のオンボーディングを見返しモードで表示するルート
+  ///
+  /// [HelpScreen] の項目から呼び出す。既読の記録は変更せず、
+  /// 「閉じる」で元の画面に戻る。
+  static Route<void> onboardingReview(OnboardingTopic topic) =>
+      MaterialPageRoute(
+        builder: (context) => OnboardingScreen(
+          topic: topic,
+          reviewMode: true,
+          onFinished: () => Navigator.of(context).pop(),
         ),
       );
 

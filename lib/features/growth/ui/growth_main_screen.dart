@@ -9,11 +9,11 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/logger.dart';
 import '../../../shared/components/app_bar_widget.dart';
 import '../domain/growth_record.dart';
 import '../state/growth_pdf_controller.dart';
 import '../state/growth_provider.dart';
-import '../../../core/config/growth_config.dart';
 
 // ══════════════════════════════════════════════════════════
 // 成長記録 メイン画面
@@ -70,7 +70,7 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
 
   /// Xへの1投稿で添付できる画像枚数の上限（1〜4枚）。
   /// SNS投稿ボタンの有効化条件（1件以上4件以下選択中）に使用する。
-  static const int _snsShareMaxCount = GrowthConfig.snsShareMaxCount;
+  static const int _snsShareMaxCount = AppValues.growthSnsShareMaxCount;
 
   /// ドラッグ選択の起点インデックス（長押し中のみ非null）
   int? _dragAnchorIndex;
@@ -306,8 +306,8 @@ class _GrowthMainScreenState extends ConsumerState<GrowthMainScreen> {
     } catch (e, st) {
       // 失敗原因の確認用ログ（デバッグコンソールにのみ出力）。
       // 画面にはSnackBarのみ表示する。
-      debugPrint('[GrowthPdfService] PDF生成に失敗しました: $e');
-      debugPrint('$st');
+      AppLogger.log('[GrowthPdfService] PDF生成に失敗しました: $e');
+      AppLogger.log('$st');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
@@ -955,16 +955,32 @@ class _GrowthThumbnailCard extends StatelessWidget {
                 children: [
                   Container(
                     color: Colors.grey.shade100,
-                    child: Image.file(
-                      File(record.imagePath),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          size: 40,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
+                    // ⚠ cacheWidth を指定しないと、カメラ原寸（1,000万画素超）が
+                    //   そのままRGBAに展開され、1枚あたり数十MBのメモリを消費する。
+                    //   セルの表示サイズに合わせてデコード解像度を絞る。
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dpr = MediaQuery.of(context).devicePixelRatio;
+                        final longestSide = constraints.biggest.longestSide;
+                        final int? cacheWidth = longestSide.isFinite
+                            ? (longestSide *
+                                    dpr *
+                                    AppValues.growthThumbDecodeOverscan)
+                                .round()
+                            : null;
+                        return Image.file(
+                          File(record.imagePath),
+                          fit: BoxFit.cover,
+                          cacheWidth: cacheWidth,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              size: 40,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   // 選択中の半透明オーバーレイ＋チェックマーク

@@ -95,6 +95,22 @@ abstract class OnboardingConfig {
     ),
   ];
 
+  /// ヘルプ画面の一覧に表示する、[topic] の名称
+  static String labelOf(OnboardingTopic topic) {
+    switch (topic) {
+      case OnboardingTopic.home:
+        return AppStrings.helpTopicHome;
+      case OnboardingTopic.drawing:
+        return AppStrings.featureDrawing;
+      case OnboardingTopic.topic:
+        return AppStrings.featureTopic;
+      case OnboardingTopic.growth:
+        return AppStrings.featureGrowth;
+      case OnboardingTopic.habit:
+        return AppStrings.featureHabit;
+    }
+  }
+
   /// [topic] のページ一覧を返す
   static List<OnboardingPageDef> pagesOf(OnboardingTopic topic) {
     switch (topic) {

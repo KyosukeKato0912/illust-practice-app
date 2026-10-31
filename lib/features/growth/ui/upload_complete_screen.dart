@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/logger.dart';
 import '../domain/growth_record.dart';
 import '../domain/growth_streak_utils.dart';
 import '../state/growth_pdf_controller.dart';
@@ -20,7 +21,7 @@ import '../../../core/constants/app_values.dart';
 // 更新された成長記録の継続カレンダーを表示する。
 // [isMaxCountReached] が true の場合（保持上限枚数にちょうど到達した
 // アップロード時のみ）、[isStreakMilestoneReached] が true の場合
-// （今日を含めた連続アップロード日数が [GrowthConfig.streakMilestoneDays]
+// （今日を含めた連続アップロード日数が [AppValues.streakTargetDays]
 // にちょうど到達した時のみ）、それぞれ特別メッセージを表示する。
 // 両方trueの場合は「連続日数メッセージ→空行→上限到達メッセージ」の順で
 // 1つのテキストにまとめて表示する（PDFボタンは上限到達時のみ表示）。
@@ -179,8 +180,8 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
         bytes: bytes,
       );
     } catch (e, st) {
-      debugPrint('[GrowthPdfService] PDF生成に失敗しました: $e');
-      debugPrint('$st');
+      AppLogger.log('[GrowthPdfService] PDF生成に失敗しました: $e');
+      AppLogger.log('$st');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(AppStrings.growthPdfGenerateError)),
@@ -222,7 +223,7 @@ class _UploadCompleteScreenState extends ConsumerState<UploadCompleteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 練習日の記録（画像を削除しても残る）。GrowthConfig.useTestData に従う
+    // 練習日の記録（画像を削除しても残る）。AppConfig.growthUseTestData に従う
     final practiceDays = ref.watch(growthPracticeDaysProvider);
     // PDFボタン用（初解禁時初回のみ表示）。絞込の影響を受けない全件。
     final allRecords = ref.watch(growthProvider);

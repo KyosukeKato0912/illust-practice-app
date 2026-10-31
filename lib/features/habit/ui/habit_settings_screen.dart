@@ -248,8 +248,14 @@ class _HabitSettingsScreenState extends ConsumerState<HabitSettingsScreen> {
                     child: Text(AppStrings.dialogCancel,
                         style: const TextStyle(color: Colors.grey)),
                   ),
-                  Text(AppStrings.habitReminderTimeLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  // 中央のタイトルは、文字サイズが大きいときに左右のボタンと
+                  // 重ならないよう、収まらなければ省略する
+                  Flexible(
+                    child: Text(AppStrings.habitReminderTimeLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, selected),
                     child: Text(AppStrings.dialogDecide,
@@ -523,12 +529,20 @@ class _ModeTab extends StatelessWidget {
                   size: 18,
                   color: selected ? Colors.white : Colors.grey.shade600),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: selected ? Colors.white : Colors.grey.shade600,
+              // 文字サイズを大きくしても横にはみ出さないよう、幅に収まる
+              // ところまで縮小する（タブの押せる範囲は変わらない）
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: selected ? Colors.white : Colors.grey.shade600,
+                    ),
+                  ),
                 ),
               ),
             ],

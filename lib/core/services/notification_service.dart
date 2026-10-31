@@ -7,6 +7,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
+import '../constants/app_values.dart';
+import '../utils/logger.dart';
 
 // ══════════════════════════════════════════════════════════
 // 通知サービス
@@ -29,6 +31,30 @@ import '../constants/app_strings.dart';
 //       既に閾値を超えていれば即日正午（過去なら翌日）に登録。
 //   cancelComeback() : 復帰促進通知を解除
 // ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// 【検証用】テスト通知の登録結果
+//
+// メンテナンス画面の「通知テスト」で使う。登録の成否と、
+// どの方式（正確なアラームか）で登録したかを呼び出し側へ返す。
+// ══════════════════════════════════════════════════════════
+enum NotificationTestStatus { scheduled, permissionDenied, failed, unsupported }
+
+class NotificationTestResult {
+  final NotificationTestStatus status;
+
+  /// 通知を送る予定の時刻（status が scheduled のときのみ）
+  final DateTime? scheduledAt;
+
+  /// 正確なアラーム（時刻ちょうどに届く方式）で登録したか
+  final bool usedExactAlarm;
+
+  const NotificationTestResult(
+    this.status, {
+    this.scheduledAt,
+    this.usedExactAlarm = false,
+  });
+}
+
 class NotificationService {
   NotificationService._();
 
@@ -45,6 +71,10 @@ class NotificationService {
   static const _breakFinishedId = 1002;
   static const _reminderId = 2001;
   static const _comebackId = 2002;
+  // 【検証用】メンテナンス画面のテスト通知専用ID。
+  // 実際の予約（_reminderId / _comebackId）を上書きしないよう、別IDにしている。
+  static const _testReminderId = 9001;
+  static const _testComebackId = 9002;
 
   // ── 通知テキスト ──────────────────────────────────────
   // タイトル・本文は AppStrings（notification〜）で管理する。
@@ -61,17 +91,17 @@ class NotificationService {
 
       final timeZoneName = timezoneInfo.identifier;
       tz.setLocalLocation(tz.getLocation(timeZoneName));
-      debugPrint(
+      AppLogger.log(
           '[NotificationService] timezone set to $timeZoneName (tz.local=${tz.local.name})');
     } catch (e, st) {
-      debugPrint(
+      AppLogger.log(
           '[NotificationService] timezone lookup failed or timed out: $e');
       // フリーズ時やエラー時は、安全なフォールバックとして日本時間（Asia/Tokyo）を強制適用
       try {
         tz.setLocalLocation(tz.getLocation('Asia/Tokyo'));
-        debugPrint('[NotificationService] Fallback to Asia/Tokyo applied.');
+        AppLogger.log('[NotificationService] Fallback to Asia/Tokyo applied.');
       } catch (innerException) {
-        debugPrint('[NotificationService] Fallback failed: $innerException');
+        AppLogger.log('[NotificationService] Fallback failed: $innerException');
       }
     }
 
@@ -90,14 +120,14 @@ class NotificationService {
 
     // プラグインと通知チャンネルの登録を確実に完了させる
     await _plugin.initialize(initSettings);
-    debugPrint(
+    AppLogger.log(
         '[NotificationService] FlutterLocalNotificationsPlugin initialized completely!');
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
     final granted = await androidPlugin?.requestNotificationsPermission();
-    debugPrint(
+    AppLogger.log(
         '[NotificationService] notifications permission granted: $granted');
 
     // ⬇️ 【ここから追記】OSに対して通知チャンネルを強制的に直接登録する処理
@@ -113,31 +143,35 @@ class NotificationService {
 
         // OSへチャンネルを直接作成・登録要求
         await androidPlugin.createNotificationChannel(androidChannel);
-        debugPrint(
+        AppLogger.log(
             '[NotificationService] AndroidNotificationChannel created forcibly by code!');
       }
     } catch (e) {
-      debugPrint('[NotificationService] Forcible channel creation failed: $e');
+      AppLogger.log('[NotificationService] Forcible channel creation failed: $e');
     }
     // ⬆️ 【ここまで追記】
 
-    // Dart側から見て、OSに実際に登録されているチャンネル一覧を確認する。
-    // ここに"作業開始促進"が出ていなければ、上のcreateNotificationChannel
-    // 自体が何らかの理由で反映されていないことになる。
-    try {
-      final channels = await androidPlugin?.getNotificationChannels();
-      debugPrint('[NotificationService] registered channels: '
-          '${channels?.map((c) => '${c.id}:${c.name}(importance=${c.importance})').toList()}');
-    } catch (e) {
-      debugPrint('[NotificationService] getNotificationChannels failed: $e');
-    }
+    // ── 診断ログ専用の確認（AppLogger 有効時のみ実行）──────────
+    // ログ出力のためだけにOSへ問い合わせる処理のため、通常（ログOFF）時は走らせない。
+    if (AppLogger.enabled) {
+      // Dart側から見て、OSに実際に登録されているチャンネル一覧を確認する。
+      // ここに"作業開始促進"が出ていなければ、上のcreateNotificationChannel
+      // 自体が何らかの理由で反映されていないことになる。
+      try {
+        final channels = await androidPlugin?.getNotificationChannels();
+        AppLogger.log('[NotificationService] registered channels: '
+            '${channels?.map((c) => '${c.id}:${c.name}(importance=${c.importance})').toList()}');
+      } catch (e) {
+        AppLogger.log('[NotificationService] getNotificationChannels failed: $e');
+      }
 
-    // 通知が全体として有効かどうか（設定→アプリ→通知のトグル）も確認
-    try {
-      final enabled = await androidPlugin?.areNotificationsEnabled();
-      debugPrint('[NotificationService] areNotificationsEnabled: $enabled');
-    } catch (e) {
-      debugPrint('[NotificationService] areNotificationsEnabled failed: $e');
+      // 通知が全体として有効かどうか（設定→アプリ→通知のトグル）も確認
+      try {
+        final enabled = await androidPlugin?.areNotificationsEnabled();
+        AppLogger.log('[NotificationService] areNotificationsEnabled: $enabled');
+      } catch (e) {
+        AppLogger.log('[NotificationService] areNotificationsEnabled failed: $e');
+      }
     }
   }
 
@@ -191,7 +225,7 @@ class NotificationService {
       if (androidPlugin == null) return true;
       return await androidPlugin.canScheduleExactNotifications() ?? false;
     } catch (e) {
-      debugPrint('[NotificationService] canScheduleExactAlarms failed: $e');
+      AppLogger.log('[NotificationService] canScheduleExactAlarms failed: $e');
       return false;
     }
   }
@@ -206,7 +240,7 @@ class NotificationService {
       if (androidPlugin == null) return true;
       return await androidPlugin.requestExactAlarmsPermission() ?? false;
     } catch (e) {
-      debugPrint(
+      AppLogger.log(
           '[NotificationService] requestExactAlarmPermission failed: $e');
       return false;
     }
@@ -219,7 +253,7 @@ class NotificationService {
   }) async {
     if (kIsWeb) return;
 
-    debugPrint(
+    AppLogger.log(
         '[NotificationService] scheduleReminder called: $hour:${minute.toString().padLeft(2, '0')}');
 
     await cancelReminder();
@@ -238,7 +272,7 @@ class NotificationService {
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
-    debugPrint(
+    AppLogger.log(
         '[NotificationService] now=$now scheduled=$scheduled (tz.local=${tz.local.name})');
 
     const androidDetails = AndroidNotificationDetails(
@@ -279,19 +313,23 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
-      debugPrint(
+      AppLogger.log(
           '[NotificationService] zonedSchedule ($scheduleMode) succeeded for id=$_reminderId at $scheduled');
     } catch (e) {
-      debugPrint('[NotificationService] zonedSchedule FAILED: $e');
+      AppLogger.log('[NotificationService] zonedSchedule FAILED: $e');
     }
 
-    // pending取得時のクラッシュを防ぐ安全なガード（エラーを修正）
-    try {
-      final pending = await _plugin.pendingNotificationRequests();
-      final pendingLog = pending.map((p) => '${p.id}:${p.title}').toList();
-      debugPrint('[NotificationService] pending requests: $pendingLog');
-    } catch (e) {
-      debugPrint('[NotificationService] Failed to fetch pending requests: $e');
+    // 登録済み通知の一覧取得は診断ログ専用（AppLogger 有効時のみ実行）。
+    // pending取得時のクラッシュを防ぐ安全なガード付き。
+    if (AppLogger.enabled) {
+      try {
+        final pending = await _plugin.pendingNotificationRequests();
+        final pendingLog = pending.map((p) => '${p.id}:${p.title}').toList();
+        AppLogger.log('[NotificationService] pending requests: $pendingLog');
+      } catch (e) {
+        AppLogger.log(
+            '[NotificationService] Failed to fetch pending requests: $e');
+      }
     }
   }
 
@@ -360,10 +398,10 @@ class NotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-      debugPrint(
+      AppLogger.log(
           '[NotificationService] comeback zonedSchedule (inexact) succeeded at $scheduled');
     } catch (e) {
-      debugPrint('[NotificationService] comeback zonedSchedule FAILED: $e');
+      AppLogger.log('[NotificationService] comeback zonedSchedule FAILED: $e');
     }
   }
 
@@ -371,6 +409,100 @@ class NotificationService {
   static Future<void> cancelComeback() async {
     if (kIsWeb) return;
     await _plugin.cancel(_comebackId);
+  }
+
+  // ── 【検証用】テスト通知（メンテナンス画面から呼ぶ）────────
+  // 実際の通知と同じ文言・チャンネルで、数十秒〜1分後に「1回だけ」届く
+  // 通知を登録する。実際の予約（毎日の作業開始促進・復帰促進）には影響しない。
+
+  /// 作業開始促進通知のテスト。実際の登録と同じく、権限があれば正確な
+  /// アラーム（時刻ちょうど）、無ければ時刻保証のない方式で登録する。
+  static Future<NotificationTestResult> scheduleTestReminder() => _scheduleTest(
+        id: _testReminderId,
+        title: AppStrings.notificationReminderTitle,
+        message: AppStrings.notificationReminderMessage,
+        preferExact: true,
+      );
+
+  /// 復帰促進通知のテスト。実際の登録と同じく、時刻保証のない方式
+  /// （inexact）で登録する（届くまで数分かかることがある）。
+  static Future<NotificationTestResult> scheduleTestComeback() => _scheduleTest(
+        id: _testComebackId,
+        title: AppStrings.notificationComebackTitle,
+        message: AppStrings.notificationComebackMessage,
+        preferExact: false,
+      );
+
+  static Future<NotificationTestResult> _scheduleTest({
+    required int id,
+    required String title,
+    required String message,
+    required bool preferExact,
+  }) async {
+    if (kIsWeb) {
+      return const NotificationTestResult(NotificationTestStatus.unsupported);
+    }
+
+    // 通知が許可されていなければ、許可を求める（Android 13 以降）。
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      final granted = await androidPlugin.requestNotificationsPermission();
+      final enabled = await androidPlugin.areNotificationsEnabled();
+      if (granted == false || enabled == false) {
+        return const NotificationTestResult(
+            NotificationTestStatus.permissionDenied);
+      }
+    }
+
+    final scheduled = tz.TZDateTime.now(tz.local).add(
+        const Duration(seconds: AppValues.maintenanceTestNotificationDelaySeconds));
+    final useExact = preferExact && await canScheduleExactAlarms();
+
+    // 作業開始促進・復帰促進の実際の登録と同じチャンネル・表示設定
+    const androidDetails = AndroidNotificationDetails(
+      _reminderChannelId,
+      AppStrings.notificationReminderChannelName,
+      channelDescription: AppStrings.notificationReminderChannelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        message,
+        scheduled,
+        details,
+        androidScheduleMode: useExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      AppLogger.log(
+          '[NotificationService] test notification id=$id scheduled at $scheduled (exact=$useExact)');
+      return NotificationTestResult(
+        NotificationTestStatus.scheduled,
+        scheduledAt: scheduled,
+        usedExactAlarm: useExact,
+      );
+    } catch (e) {
+      AppLogger.log('[NotificationService] test notification FAILED: $e');
+      return const NotificationTestResult(NotificationTestStatus.failed);
+    }
   }
 
   // ── Web：アプリ内バナー ────────────────────────────────

@@ -11,21 +11,73 @@ import '../constants/app_strings.dart';
 // 保存する。保存先ディレクトリ・ファイル名の組み立てをここに集約し、
 // 複数箇所での重複実装を防ぐ。
 //
-// ⚠ 現フェーズ：保存先パスの組み立てのみを提供する。
-//   実際の画像保存（File書き込み）・削除処理は、
-//   image_picker 導入後に GrowthRepository / GrowthDataSource から
-//   このヘルパーを介して呼び出す想定。
+// このヘルパーは保存先ディレクトリ・ファイル名・フルパスの組み立てのみを
+// 提供する。実際の画像のコピー保存・削除は GrowthNotifier
+// （features/growth/state/growth_provider.dart）が行い、
+// 保存先パスの決定にこのヘルパーを利用している。
 // ══════════════════════════════════════════════════════════
 abstract class AppFileUtils {
   /// 成長記録画像を格納するディレクトリ名
   /// （アプリ専用ローカルストレージ配下に作成する）
   static const String growthImagesDirName = 'growth_images';
 
+  /// アプリ専用ドキュメントディレクトリのパス（[initialize] で設定）。
+  /// Hive の TypeAdapter.read は同期処理のため、非同期の
+  /// getApplicationDocumentsDirectory() を呼べない。そのため起動時に1度だけ
+  /// 取得してここに保持し、保存パスの相対⇔絶対の変換に使う。
+  static String? _documentsDirPath;
+
+  /// 起動時（Hiveを使う前）に1度だけ呼ぶ。
+  /// 取得できない環境（Web等）では例外を投げるので、呼び出し側で握りつぶすこと。
+  /// その場合 [resolveStoredPath] は保存値をそのまま返す。
+  static Future<void> initialize() async {
+    final dir = await getApplicationDocumentsDirectory();
+    _documentsDirPath = dir.path;
+  }
+
+  // ── 保存パスの相対化 ──────────────────────────────────
+  // Hive には端末ごとの絶対パスではなく
+  //   growth_images/<ファイル名>
+  // という相対パスを保存し、読み出し時に現在のドキュメントディレクトリを
+  // 前置して絶対パスに戻す。アプリのデータ領域のパスが変わっても
+  // （端末移行・OS更新・復元など）画像を参照できるようにするための仕組み。
+  //
+  // ⚠ 旧バージョンで絶対パス保存したデータも、パス内の
+  //   '/growth_images/' 以降を取り出して現在のディレクトリに付け替えるため、
+  //   移行処理なしでそのまま読める。
+
+  static const String _storedMarker = '/$growthImagesDirName/';
+
+  /// 絶対パスを Hive 保存用の相対パス（growth_images/<名前>）に変換する。
+  /// 成長記録の保存先ディレクトリ配下でないパスは、そのまま返す。
+  static String toStoredPath(String absolutePath) {
+    final index = absolutePath.indexOf(_storedMarker);
+    if (index == -1) return absolutePath;
+    return absolutePath.substring(index + 1);
+  }
+
+  /// Hive の保存値（相対パス、または旧形式の絶対パス）を、
+  /// 現在の端末で使える絶対パスに変換する。
+  static String resolveStoredPath(String storedPath) {
+    final base = _documentsDirPath;
+    if (base == null) return storedPath; // 未初期化（Web等）：そのまま使う
+
+    if (storedPath.startsWith('$growthImagesDirName/')) {
+      return '$base/$storedPath'; // 相対パス（新形式）
+    }
+    final index = storedPath.indexOf(_storedMarker);
+    if (index != -1) {
+      return '$base${storedPath.substring(index)}'; // 旧形式の絶対パスを付け替え
+    }
+    return storedPath;
+  }
+
   /// 成長記録画像の保存先ディレクトリを取得する。
   /// 未作成の場合はディレクトリを作成してから返す。
   static Future<Directory> growthImagesDirectory() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final dir = Directory('${appDocDir.path}/$growthImagesDirName');
+    final basePath = _documentsDirPath ??
+        (await getApplicationDocumentsDirectory()).path;
+    final dir = Directory('$basePath/$growthImagesDirName');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

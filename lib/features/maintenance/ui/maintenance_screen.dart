@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/growth_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_values.dart';
@@ -12,6 +11,7 @@ import '../../growth/state/growth_practice_log_provider.dart';
 import '../../growth/state/growth_provider.dart';
 import '../../habit/state/habit_practice_provider.dart';
 import '../../onboarding/state/onboarding_controller.dart';
+import '../state/maintenance_notification_controller.dart';
 
 // ══════════════════════════════════════════════════════════
 // メンテナンス画面
@@ -23,11 +23,14 @@ import '../../onboarding/state/onboarding_controller.dart';
 // 状態になる）。
 //
 // ── 設計方針 ──
-// ・画面上の変更は、他の設定画面（習慣化サポート設定など）と違い
-//   Hive等には一切保存しない。「決定」ボタンで初めて各機能の
+// ・画面の入力状態は、他の設定画面（習慣化サポート設定など）と違い
+//   Hive等には保存しない。「決定」ボタンで初めて各機能の
 //   実際の状態（既存のProvider／Repository）に反映される。
-// ・アプリを再起動すれば、この画面自体の状態は必ずリリース時の
-//   初期値からやり直しになる（＝検証用の変更が本番に残る心配がない）。
+// ・アプリを再起動すれば、この画面自体の状態と、Provider経由で反映した
+//   設定（項目2〜6）は必ずリリース時の初期値からやり直しになる。
+// ・ただし、実データに直接作用する次の2つは永続化される（再起動しても戻らない）。
+//     - 項目1「保持上限到達フラグ」（Hive の growth_meta に保存）
+//     - 「初回オンボーディング」のリセット（SharedPreferences の既読フラグを削除）
 // ・AppBar右上の「初期状態に戻す」は、画面の選択状態をリリース時の
 //   値に戻したうえで、即座に反映まで行う
 //   （habit_settings_screen.dart の「初期状態に戻す」と同じ考え方）。
@@ -40,7 +43,7 @@ import '../../onboarding/state/onboarding_controller.dart';
 //      「現在の設定：ON/OFF」として常時表示する（ref.watchでリアル
 //      タイムに反映）。
 //   2. 成長記録：保持上限枚数（growthMaxRecordCountProvider経由）。
-//      入力欄は画面を開くたびに必ず GrowthConfig.maxRecordCount
+//      入力欄は画面を開くたびに必ず AppValues.growthMaxRecordCount
 //      （リリース時の初期値＝300）から始まる。実際に判定・自動削除に
 //      使われている現在値も同様に別途表示する。
 //   3. 成長記録：データソース（growthDataSourceModeProvider経由、
@@ -58,6 +61,11 @@ import '../../onboarding/state/onboarding_controller.dart';
 //   6. 習慣化サポート：登録件数表示（habitShowDebugDataCountProvider
 //      経由）。継続カレンダー下に登録件数・記録日数を表示するかどうか。
 //      スイッチは画面を開くたびに必ずfalse（非表示）から始まる。
+//
+//   7. 通知テスト（「決定」とは独立・押した時点で即時実行）。
+//      作業開始促進通知・復帰促進通知を、それぞれ1分後に1回だけ送る。
+//      実際の通知予約（毎日の作業開始促進・復帰促進）は変更しない
+//      （テスト専用の通知IDを使う）。
 //
 // 今後の項目を追加する際は、_MaintenanceScreenState に編集用フィールドを
 // 増やし、_decide() / _resetToDefault() にそれぞれの反映・初期化処理を
@@ -91,10 +99,10 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   bool _maxCountReached = false;
 
   // ── 成長記録：保持上限枚数（画面上の未反映の選択値）──
-  // 画面を開くたびに必ず GrowthConfig.maxRecordCount（リリース時の
+  // 画面を開くたびに必ず AppValues.growthMaxRecordCount（リリース時の
   // 初期値）から始める。
   late final TextEditingController _maxRecordCountController =
-      TextEditingController(text: '${GrowthConfig.maxRecordCount}');
+      TextEditingController(text: '${AppValues.growthMaxRecordCount}');
 
   // ── 成長記録／習慣化サポート：データソース（実データ／テストデータ／
   //    併用、画面上の未反映の選択値）── 画面を開くたびに必ず real
@@ -248,7 +256,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
 
     setState(() {
       _maxCountReached = false;
-      _maxRecordCountController.text = '${GrowthConfig.maxRecordCount}';
+      _maxRecordCountController.text = '${AppValues.growthMaxRecordCount}';
       _growthDataSourceMode = GrowthDataSourceMode.real;
       _habitDataSourceMode = GrowthDataSourceMode.real;
       _habitShowDebugDataCount = false;
@@ -275,6 +283,15 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
   /// 初回オンボーディングの既読フラグを全てクリアする。
   /// 画面上の設定（AppBarの「初期状態に戻す」・「決定」）とは独立して、
   /// 確認ダイアログで了承された時点で即時に実行する。
+  // 通知テスト：登録して、結果のメッセージを SnackBar で表示する
+  Future<void> _runNotificationTest(Future<String> Function() action) async {
+    final message = await action();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _resetOnboarding() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -603,6 +620,51 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                         ),
                         onPressed: _resetOnboarding,
                         child: Text(AppStrings.maintenanceOnboardingResetButton),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── 通知テスト（「決定」とは独立・即時実行） ──
+                _MaintenanceSectionCard(
+                  title: AppStrings.maintenanceNotificationSectionTitle,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        AppStrings.maintenanceNotificationDesc,
+                        style: const TextStyle(fontSize: 13, height: 1.5),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.theme,
+                          side: const BorderSide(color: AppColors.theme),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => _runNotificationTest(
+                            MaintenanceNotificationController
+                                .scheduleReminderTest),
+                        child: Text(
+                            AppStrings.maintenanceNotificationReminderButton),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.theme,
+                          side: const BorderSide(color: AppColors.theme),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => _runNotificationTest(
+                            MaintenanceNotificationController
+                                .scheduleComebackTest),
+                        child: Text(
+                            AppStrings.maintenanceNotificationComebackButton),
                       ),
                     ],
                   ),

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gal/gal.dart';
-import '../../../core/config/growth_config.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/file_utils.dart';
 import '../../../shared/testdata/growth_testdata.dart';
@@ -11,11 +10,12 @@ import '../domain/growth_repository.dart';
 import '../domain/growth_streak_utils.dart';
 import '../domain/practice_day.dart';
 import 'growth_practice_log_provider.dart';
+import '../../../core/constants/app_values.dart';
 
 // ══════════════════════════════════════════════════════════
 // GrowthMaxCountFlagNotifier / growthMaxCountReachedProvider
 //
-// 保持上限枚数（GrowthConfig.maxRecordCount）に一度でも到達したことが
+// 保持上限枚数（AppValues.growthMaxRecordCount）に一度でも到達したことが
 // あるかどうかの永続フラグを、UIからリアクティブに参照できるように
 // StateNotifierとして公開する。
 //
@@ -88,22 +88,22 @@ final growthPdfNewBadgeSeenProvider =
 // GrowthMaxRecordCountNotifier / growthMaxRecordCountProvider
 //
 // 保持上限枚数の「実際に判定・削除処理で使う値」。
-// GrowthConfig.maxRecordCount（リリース時の初期値）をアプリ起動時の
+// AppValues.growthMaxRecordCount（リリース時の初期値）をアプリ起動時の
 // 初期値として持ち、メンテナンス画面から検証用に上書きできるように
 // するためのProvider。
 //
 // ⚠ この値はどこにも永続化しない（アプリ再起動で必ず
-//   GrowthConfig.maxRecordCount の値に戻る）。GrowthNotifier は
+//   AppValues.growthMaxRecordCount の値に戻る）。GrowthNotifier は
 //   アップロード確定のたびにこの値を読み取り、GrowthRepository の
 //   上限判定・自動削除処理へ明示的に渡す。
 // ══════════════════════════════════════════════════════════
 class GrowthMaxRecordCountNotifier extends StateNotifier<int> {
-  GrowthMaxRecordCountNotifier() : super(GrowthConfig.maxRecordCount);
+  GrowthMaxRecordCountNotifier() : super(AppValues.growthMaxRecordCount);
 
   void setValue(int value) => state = value;
 
   /// 【検証用】メンテナンス画面の「初期状態に戻す」から呼ばれる。
-  void resetToDefault() => state = GrowthConfig.maxRecordCount;
+  void resetToDefault() => state = AppValues.growthMaxRecordCount;
 }
 
 final growthMaxRecordCountProvider =
@@ -133,7 +133,7 @@ final growthMaxRecordCountProvider =
 //   ・所要時間（分・任意入力）は uploadScreen 側でバリデーション済みの
 //     int?（durationMin）として受け取り、そのままファイル名・
 //     GrowthRecordに反映する
-//   ・保持枚数の上限は [GrowthConfig.maxRecordCount]。上限を超えて
+//   ・保持枚数の上限は [AppValues.growthMaxRecordCount]。上限を超えて
 //     アップロードすると最古の1件が自動削除される（Hiveレコード・
 //     画像ファイルの両方）
 //   ・上限到達時は growthMaxCountReachedProvider の state も更新し、
@@ -197,11 +197,11 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
   ///
   /// 戻り値は次のフラグをまとめたレコード：
   ///   ・isMaxCountReached … 今回のアップロードで保持枚数が上限
-  ///     （[GrowthConfig.maxRecordCount]）に「生涯で初めて」到達したか。
+  ///     （[AppValues.growthMaxRecordCount]）に「生涯で初めて」到達したか。
   ///     一度到達した後は、削除して枚数が減り再度上限に達しても false に
   ///     なる（特別メッセージは初回到達時のみ表示するため）。
   ///   ・isStreakMilestoneReached … 今日を含めた連続アップロード日数が
-  ///     ちょうど [GrowthConfig.streakMilestoneDays] に達したか。
+  ///     ちょうど [AppValues.streakTargetDays] に達したか。
   ///     こちらは「生涯で一度」ではなく、連続記録が途切れて再度
   ///     ちょうどその日数に達した場合は再び true になる。
   ///
@@ -243,7 +243,7 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
         bool showPdfButtonFadeIn,
       })> _saveRecord(XFile picked, {int? durationMin}) async {
     // メンテナンス画面での上書きを反映した「実際に使う」保持上限枚数。
-    // 上書きが無ければ GrowthConfig.maxRecordCount のまま。
+    // 上書きが無ければ AppValues.growthMaxRecordCount のまま。
     final maxRecordCount = _ref.read(growthMaxRecordCountProvider);
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, now.day);
@@ -307,11 +307,11 @@ class GrowthNotifier extends StateNotifier<List<GrowthRecord>> {
     }
 
     // 今日を含めた連続アップロード日数が、ちょうど
-    // GrowthConfig.streakMilestoneDays に達したかどうかを判定する。
+    // AppValues.streakTargetDays に達したかどうかを判定する。
     final practiceDays = _ref.read(growthPracticeDaysProvider);
     final currentStreak = _currentStreakLength(practiceDays, date);
     final streakMilestoneReached =
-        currentStreak == GrowthConfig.streakMilestoneDays;
+        currentStreak == AppValues.streakTargetDays;
 
     // ── 演出アニメーションの発生判定 ──────────────────────
     // その日の最初のアップロードかどうか（今回の保存前は今日の記録が

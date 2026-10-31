@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import '../../../core/utils/file_utils.dart';
 
 // ══════════════════════════════════════════════════════════
 // 成長記録 値オブジェクト（Hiveモデル）
@@ -13,7 +14,9 @@ import 'package:hive/hive.dart';
 class GrowthRecord {
   final String id;
 
-  /// 保存先の絶対パス（path_provider 経由のローカルファイル）
+  /// 画像ファイルの絶対パス（path_provider 経由のローカルファイル）。
+  /// ⚠ メモリ上では絶対パスだが、Hive には相対パス（growth_images/<名前>）で
+  ///   保存する。変換は GrowthRecordAdapter が行う（AppFileUtils 参照）。
   final String imagePath;
 
   /// アップロード日（時刻は無視し日付のみを保持する）
@@ -42,7 +45,8 @@ class GrowthRecordAdapter extends TypeAdapter<GrowthRecord> {
   @override
   GrowthRecord read(BinaryReader reader) {
     final id = reader.readString();
-    final imagePath = reader.readString();
+    // 保存値（相対パス／旧形式の絶対パス）を現在の端末の絶対パスに変換する
+    final imagePath = AppFileUtils.resolveStoredPath(reader.readString());
     final dateMillis = reader.readInt();
     final serialNumber = reader.readInt();
     final hasDuration = reader.readBool();
@@ -59,7 +63,7 @@ class GrowthRecordAdapter extends TypeAdapter<GrowthRecord> {
   @override
   void write(BinaryWriter writer, GrowthRecord obj) {
     writer.writeString(obj.id);
-    writer.writeString(obj.imagePath);
+    writer.writeString(AppFileUtils.toStoredPath(obj.imagePath));
     writer.writeInt(obj.date.millisecondsSinceEpoch);
     writer.writeInt(obj.serialNumber);
     writer.writeBool(obj.durationMin != null);

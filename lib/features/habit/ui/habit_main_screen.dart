@@ -122,7 +122,8 @@ class _HabitMainScreenState extends ConsumerState<HabitMainScreen> {
         child: child!,
       ),
     );
-    if (picked != null) {
+    // showDatePicker の await 中に画面が破棄されている場合に備える
+    if (picked != null && mounted) {
       setState(() {
         _weekMonday = AppDateUtils.mondayOf(picked);
         _openTooltipKey = null; // 週が変わるので開いていた吹き出しは閉じる

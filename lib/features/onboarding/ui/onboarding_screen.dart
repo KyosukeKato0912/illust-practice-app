@@ -11,6 +11,9 @@ import '../../../core/constants/app_strings.dart';
 // どちらでも [onFinished] が呼ばれる。
 // 既読の記録や、案内後に何を表示するかは呼び出し側
 // （OnboardingGateWidget）が担当し、この画面は表示だけを行う。
+//
+// [reviewMode] が true のときは、ヘルプ（HelpScreen）から見返すための表示になる。
+// 「スキップ」「はじめる」の代わりに「閉じる」を表示する（既読の記録は行わない）。
 // ══════════════════════════════════════════════════════════
 class OnboardingScreen extends StatefulWidget {
   final OnboardingTopic topic;
@@ -18,10 +21,14 @@ class OnboardingScreen extends StatefulWidget {
   /// 「スキップ」または最終ページの「はじめる」を押したときに呼ばれる
   final VoidCallback onFinished;
 
+  /// true のとき、ヘルプからの見返し用の文言（「閉じる」）で表示する
+  final bool reviewMode;
+
   const OnboardingScreen({
     super.key,
     required this.topic,
     required this.onFinished,
+    this.reviewMode = false,
   });
 
   @override
@@ -74,7 +81,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     maintainState: true,
                     child: TextButton(
                       onPressed: widget.onFinished,
-                      child: const Text(AppStrings.onboardingSkip),
+                      child: Text(
+                        widget.reviewMode
+                            ? AppStrings.onboardingClose
+                            : AppStrings.onboardingSkip,
+                      ),
                     ),
                   ),
                 ),
@@ -103,7 +114,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       onPressed: _onNext,
                       child: Text(
                         _isLast
-                            ? AppStrings.onboardingStart
+                            ? (widget.reviewMode
+                                ? AppStrings.onboardingClose
+                                : AppStrings.onboardingStart)
                             : AppStrings.onboardingNext,
                         style: const TextStyle(fontSize: 16),
                       ),

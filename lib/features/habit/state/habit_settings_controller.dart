@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show debugPrint;
+import '../../../core/utils/logger.dart';
 import '../../../core/services/notification_service.dart';
 import '../domain/habit_settings.dart';
 import '../domain/habit_settings_repository.dart';
@@ -107,7 +107,7 @@ class HabitSettingsController {
         lastPracticeDate: lastPracticeDate,
       );
     } catch (e) {
-      debugPrint('[HabitSettingsController] comeback sync failed: $e');
+      AppLogger.log('[HabitSettingsController] comeback sync failed: $e');
     }
   }
 

@@ -35,7 +35,7 @@ import '../state/growth_provider.dart';
 //   ・入力値（分）はそのままGrowthRecord.durationMinとして保存され、
 //     保存ファイル名にも反映される（例：2026-06-01-2枚目-3分.png）。
 //
-// 保持上限枚数（GrowthConfig.maxRecordCount）：
+// 保持上限枚数（AppValues.growthMaxRecordCount）：
 //   ・上限を超えてアップロードすると最古の1件が自動削除される。
 //   ・「ちょうど上限に到達したアップロード」の場合のみ、完了画面に
 //     特別メッセージを表示する（isMaxCountReached をルートへ渡す）。

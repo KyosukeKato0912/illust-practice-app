@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/growth_config.dart';
 import '../../../shared/testdata/growth_testdata.dart';
 import '../domain/growth_repository.dart';
 import '../domain/practice_day.dart';
+import '../../../core/config/app_config.dart';
 
 // ══════════════════════════════════════════════════════════
 // 練習日の記録（継続カレンダー用）プロバイダー
@@ -15,7 +15,7 @@ import '../domain/practice_day.dart';
 //     merged … テストデータ＋実データを日付ごとに合算して扱う
 //              （例：テストデータで昨日までの20日分を作り、今日は実際に
 //              アップロードして21日連続達成の挙動を見る、といった検証用）
-//   GrowthConfig.useTestData（リリース時の初期値＝real）をアプリ起動時
+//   AppConfig.growthUseTestData（リリース時の初期値＝real）をアプリ起動時
 //   の初期値として持ち、メンテナンス画面から検証用に切り替えられる。
 //   ⚠ どこにも永続化しない（アプリ再起動で必ず real に戻る）。
 //
@@ -36,14 +36,14 @@ enum GrowthDataSourceMode { real, test, merged }
 
 class GrowthDataSourceModeNotifier extends StateNotifier<GrowthDataSourceMode> {
   GrowthDataSourceModeNotifier()
-      : super(GrowthConfig.useTestData
+      : super(AppConfig.growthUseTestData
             ? GrowthDataSourceMode.test
             : GrowthDataSourceMode.real);
 
   void setValue(GrowthDataSourceMode value) => state = value;
 
   /// 【検証用】メンテナンス画面の「初期状態に戻す」から呼ばれる。
-  void resetToDefault() => state = GrowthConfig.useTestData
+  void resetToDefault() => state = AppConfig.growthUseTestData
       ? GrowthDataSourceMode.test
       : GrowthDataSourceMode.real;
 }

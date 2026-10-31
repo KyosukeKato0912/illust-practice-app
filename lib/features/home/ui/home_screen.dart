@@ -11,6 +11,7 @@ import '../../../shared/components/feedback_link_widget.dart';
 // ホーム画面
 //
 // 5機能へのナビゲーションボタンを表示する。
+// AppBar 右端のヘルプボタンから、初回オンボーディングをいつでも見返せる。
 // 未実装機能は [enabled: false] で「準備中」グレーボタンになる。
 // AppConfig.featureMaintenance が true の間は、末尾にメンテナンス画面への
 // ボタンも表示する（「準備中」表示ではなく、false の間はボタンごと
@@ -26,6 +27,13 @@ class HomeScreen extends StatelessWidget {
         title: AppStrings.homeTitle,
         backgroundColor: AppColors.theme,
         showBackButton: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: AppStrings.helpButtonTooltip,
+            onPressed: () => Navigator.push(context, AppRouter.help()),
+          ),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -33,61 +41,66 @@ class HomeScreen extends StatelessWidget {
               (constraints.maxWidth * AppValues.outerPadRatio)
                   .clamp(AppValues.outerPadMin, AppValues.outerPadMax);
 
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: outerPad, vertical: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _FeatureNavButton(
-                    label: AppStrings.featureDrawing,
-                    color: AppColors.theme,
-                    enabled: AppConfig.featureXSecDrawing,
-                    onTap: () => Navigator.push(context, AppRouter.drawing()),
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: outerPad, vertical: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _FeatureNavButton(
+                        label: AppStrings.featureDrawing,
+                        color: AppColors.theme,
+                        enabled: AppConfig.featureXSecDrawing,
+                        onTap: () => Navigator.push(context, AppRouter.drawing()),
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureNavButton(
+                        label: AppStrings.featureTopic,
+                        color: AppColors.theme,
+                        enabled: AppConfig.featureTopicGenerator,
+                        onTap: () => Navigator.push(context, AppRouter.topic()),
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureNavButton(
+                        label: AppStrings.featureGrowth,
+                        color: AppColors.theme,
+                        enabled: AppConfig.featureGrowthRecord,
+                        onTap: () => Navigator.push(context, AppRouter.growth()),
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureNavButton(
+                        label: AppStrings.featureHabit,
+                        color: AppColors.theme,
+                        enabled: AppConfig.featureHabitSupport,
+                        onTap: () => Navigator.push(context, AppRouter.habit()),
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureNavButton(
+                        label: AppStrings.featureProLesson,
+                        color: AppColors.proArtistLesson,
+                        enabled: AppConfig.featureProLesson,
+                        onTap: () {}, // TODO: AppRouter.proLesson() に差し替える
+                      ),
+                      if (AppConfig.featureMaintenance) ...[
+                        const SizedBox(height: 12),
+                        _FeatureNavButton(
+                          label: AppStrings.featureMaintenance,
+                          color: Colors.grey.shade700,
+                          onTap: () =>
+                              Navigator.push(context, AppRouter.maintenance()),
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+                      FeedbackLinkWidget(
+                        label: AppStrings.feedbackLinkLabelHome,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _FeatureNavButton(
-                    label: AppStrings.featureTopic,
-                    color: AppColors.theme,
-                    enabled: AppConfig.featureTopicGenerator,
-                    onTap: () => Navigator.push(context, AppRouter.topic()),
-                  ),
-                  const SizedBox(height: 12),
-                  _FeatureNavButton(
-                    label: AppStrings.featureGrowth,
-                    color: AppColors.theme,
-                    enabled: AppConfig.featureGrowthRecord,
-                    onTap: () => Navigator.push(context, AppRouter.growth()),
-                  ),
-                  const SizedBox(height: 12),
-                  _FeatureNavButton(
-                    label: AppStrings.featureHabit,
-                    color: AppColors.theme,
-                    enabled: AppConfig.featureHabitSupport,
-                    onTap: () => Navigator.push(context, AppRouter.habit()),
-                  ),
-                  const SizedBox(height: 12),
-                  _FeatureNavButton(
-                    label: AppStrings.featureProLesson,
-                    color: AppColors.proArtistLesson,
-                    enabled: AppConfig.featureProLesson,
-                    onTap: () {}, // TODO: AppRouter.proLesson() に差し替える
-                  ),
-                  if (AppConfig.featureMaintenance) ...[
-                    const SizedBox(height: 12),
-                    _FeatureNavButton(
-                      label: AppStrings.featureMaintenance,
-                      color: Colors.grey.shade700,
-                      onTap: () =>
-                          Navigator.push(context, AppRouter.maintenance()),
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  FeedbackLinkWidget(
-                    label: AppStrings.feedbackLinkLabelHome,
-                  ),
-                ],
+                ),
               ),
             ),
           );

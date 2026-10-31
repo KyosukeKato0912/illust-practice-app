@@ -68,38 +68,4 @@ abstract class HabitConfig {
   /// 現在使用する花丸画像のアセットパスを返す。
   static String get currentFlowerCircleAssetPath =>
       flowerCircleAssetPath(defaultFlowerCircleId);
-
-  // ══════════════════════════════════════════════════════════
-  // 検証用フラグ
-  // ══════════════════════════════════════════════════════════
-
-  /// 【検証用】継続カレンダーの下に、現在登録されている件数
-  /// （データ総数・記録のある日数）を表示するかどうか（リリース時の
-  /// 初期値）。
-  ///
-  /// ⚠ 実際に使われる値は、この定数そのものではなく
-  ///   [habitShowDebugDataCountProvider]
-  ///   （features/habit/state/habit_practice_provider.dart）経由の値。
-  ///   メンテナンス画面から検証用に切り替えられるようにするため、
-  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
-  ///   必ずこの定数の値（false）へ戻る。
-  static const bool showDebugDataCount = false;
-
-  /// 【検証用】習慣化サポートの継続カレンダーを、実データ
-  /// （growthProvider）の代わりに shared/testdata/growth_testdata.dart
-  /// のテストデータで表示するかどうか（リリース時の初期値）。
-  ///
-  /// GrowthConfig.useTestData とは独立して切替できる
-  /// （例：成長記録メイン画面は実データのまま、習慣化サポート側だけ
-  /// テストデータで継続カレンダーの配色を確認する、といった使い方を
-  /// 想定）。
-  ///
-  /// ⚠ 実際に使われる値は、この定数そのものではなく
-  ///   [habitDataSourceModeProvider]
-  ///   （features/habit/state/habit_practice_provider.dart）経由の値
-  ///   （real/test/merged の3値）。
-  ///   メンテナンス画面から検証用に切り替えられるようにするため、
-  ///   このProviderは初期値としてこの定数を使い、アプリ起動のたびに
-  ///   必ずこの定数の値（false）へ戻る。
-  static const bool useTestData = false;
 }

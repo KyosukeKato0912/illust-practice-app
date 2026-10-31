@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import '../../../core/constants/app_values.dart';
 import '../../../core/config/drawing_config.dart';
 
 // ══════════════════════════════════════════════════════════
@@ -127,7 +126,7 @@ class DrawingModelLoader {
     final paths = manifest
         .listAssets()
         .where((p) =>
-            p.startsWith(AppValues.modelAssetFolder) &&
+            p.startsWith(DrawingConfig.modelAssetFolder) &&
             (p.endsWith('.png') ||
                 p.endsWith('.jpg') ||
                 p.endsWith('.jpeg') ||
