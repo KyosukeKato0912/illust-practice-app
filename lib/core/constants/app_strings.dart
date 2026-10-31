@@ -9,8 +9,7 @@ abstract class AppStrings {
 
   // ── 起動エラー（データベース初期化失敗） ────────────────
   static const String startupErrorTitle = '起動できませんでした';
-  static const String startupErrorMessage =
-      'データの準備に失敗しました。\n'
+  static const String startupErrorMessage = 'データの準備に失敗しました。\n'
       'もう一度お試しください。改善しない場合はアプリを再起動してください。';
   static const String startupErrorRetry = '再試行';
   static const String startupErrorRetryFailed = '再試行しましたが、まだ準備できません';
@@ -294,7 +293,7 @@ abstract class AppStrings {
   static const String growthPdfHeaderTitle = 'あなたの成長記録';
 
   /// PDF表紙に表示するキャッチコピー
-  static const String growthPdfCoverCatchCopy = '毎日3分、描けば進む';
+  static const String growthPdfCoverCatchCopy = '毎日3分、小さな練習から大きな開花へ。';
 
   /// PDF表紙に表示する総作業時間のラベル（例：'総作業時間：3時間20分'）
   static const String growthPdfCoverTotalDurationPrefix = '総作業時間：';
@@ -474,8 +473,7 @@ abstract class AppStrings {
   /// セクション：初回オンボーディングを初回状態（未表示）に戻す
   /// 「決定」ボタンとは無関係に、押した時点で即時に実行される。
   static const String maintenanceOnboardingSectionTitle = '初回オンボーディング';
-  static const String maintenanceOnboardingDesc =
-      '各機能の初回案内を未表示の状態に戻します。\n'
+  static const String maintenanceOnboardingDesc = '各機能の初回案内を未表示の状態に戻します。\n'
       '次に各機能を開いたとき（ホームはアプリの再起動後）に、もう一度案内が表示されます。\n'
       '「決定」を押さなくても、ボタンを押した時点で即時に実行されます。';
   static const String maintenanceOnboardingResetButton = '初回状態に戻す';
@@ -558,6 +556,7 @@ abstract class AppStrings {
   static const String onboardingSkip = 'スキップ';
   static const String onboardingNext = '次へ';
   static const String onboardingStart = 'はじめる';
+
   /// ヘルプからオンボーディングを見返すときの、スキップ／最終ページのボタン文言
   static const String onboardingClose = '閉じる';
 
@@ -569,14 +568,12 @@ abstract class AppStrings {
 
   // ホーム
   static const String onboardingHomeP1Title = 'イラスト練習をサポートします';
-  static const String onboardingHomeP1Body =
-      '毎日3分、描けば進む。\n'
+  static const String onboardingHomeP1Body = '毎日3分、小さな練習から大きな開花へ。n'
       '描く・考える・記録する・続ける。\n'
       '毎日の練習に役立つ機能を\n'
       'ひとつにまとめたアプリです。';
   static const String onboardingHomeP2Title = 'ホームから機能を選びます';
-  static const String onboardingHomeP2Body =
-      'ホーム画面のボタンから、使いたい機能を選んでください。\n'
+  static const String onboardingHomeP2Body = 'ホーム画面のボタンから、使いたい機能を選んでください。\n'
       '各機能を初めて開くときに、簡単な使い方をご案内します。';
 
   // X秒ドローイング
@@ -585,30 +582,25 @@ abstract class AppStrings {
       'モデルのポーズ画像が、設定した時間ごとに自動で切り替わります。\n'
       '短い時間で形をとらえる、クロッキー練習ができます。';
   static const String onboardingDrawingP2Title = '自分に合わせて設定できます';
-  static const String onboardingDrawingP2Body =
-      '画像の切り替え時間や、表示するカテゴリを選べます。\n'
+  static const String onboardingDrawingP2Body = '画像の切り替え時間や、表示するカテゴリを選べます。\n'
       'ループ再生、シャッフル、最大作業時間も設定できます。';
 
   // お題ジェネレーター
   static const String onboardingTopicP1Title = 'お題で描くきっかけをつくります';
-  static const String onboardingTopicP1Body =
-      '「何を描こう」と迷ったときに使います。\n'
+  static const String onboardingTopicP1Body = '「何を描こう」と迷ったときに使います。\n'
       'シチュエーション、構図、制限時間など3つの項目から選んで'
       '「決定」を押すと、お題ができあがります。';
   static const String onboardingTopicP2Title = 'ランダムや履歴も使えます';
-  static const String onboardingTopicP2Body =
-      '「ランダム」を押すと、お題が自動で決まります。\n'
+  static const String onboardingTopicP2Body = '「ランダム」を押すと、お題が自動で決まります。\n'
       '作ったお題はコピーでき、履歴から選び直すこともできます。';
 
   // 成長記録
   static const String onboardingGrowthP1Title = '描いたイラストを記録します';
-  static const String onboardingGrowthP1Body =
-      '描いたイラストを写真やファイルから追加すると、\n'
+  static const String onboardingGrowthP1Body = '描いたイラストを写真やファイルから追加すると、\n'
       '成長記録の一覧にたまっていきます。\n'
       '作業時間も、任意で記録できます。';
   static const String onboardingGrowthP2Title = '続けるほど成長が見えてきます';
-  static const String onboardingGrowthP2Body =
-      '継続カレンダーで練習した日を確認でき、\n'
+  static const String onboardingGrowthP2Body = '継続カレンダーで練習した日を確認でき、\n'
       '連続で続けるとお祝いメッセージが届きます。\n'
       '一定の枚数がたまると、PDFに書き出せるようになります。\n'
       '\n'
@@ -617,8 +609,7 @@ abstract class AppStrings {
 
   // 習慣化サポート
   static const String onboardingHabitP1Title = 'メリハリタイマー';
-  static const String onboardingHabitP1Body =
-      '作業と休憩を自動で切り替えるタイマーです。\n'
+  static const String onboardingHabitP1Body = '作業と休憩を自動で切り替えるタイマーです。\n'
       'メリハリをつけて、集中して取り組めます。\n'
       '基本セットか、自由な時間設定を選べます。';
   static const String onboardingHabitP2Title = '継続カレンダーと通知で習慣に';

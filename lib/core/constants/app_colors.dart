@@ -8,10 +8,13 @@ import 'package:flutter/material.dart';
 // ══════════════════════════════════════════════════════════
 abstract class AppColors {
   // アプリ全体のテーマカラー（AppBar・アクセント・ボタン等に共通適用）
-  static const Color theme       = Colors.purple;
-  static const Color themeLight  = Color(0xFFF3E5F5); // purple.shade50
-  static const Color themeBorder = Color(0xFFCE93D8); // purple.shade200
-  static const Color themeDark   = Color(0xFF6A1B9A); // purple.shade700
+  // 薄緑系（lightGreen）。白文字を載せる背景色としても使うため、
+  // 白文字とのコントラスト比（約3.2:1）を保てる濃さにしている。
+  // これより薄くすると、ボタン・AppBar上の白文字が読みにくくなる。
+  static const Color theme       = Color(0xFF689F38); // lightGreen.shade700
+  static const Color themeLight  = Color(0xFFF1F8E9); // lightGreen.shade50
+  static const Color themeBorder = Color(0xFFAED581); // lightGreen.shade300
+  static const Color themeDark   = Color(0xFF33691E); // lightGreen.shade900
 
   // 未実装機能のグレー（ホーム画面の非活性ボタン）
   static const Color disabled = Color(0xFFBDBDBD); // grey.shade400

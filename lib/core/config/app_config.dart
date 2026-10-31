@@ -18,7 +18,7 @@ abstract class AppConfig {
   // フィードバックリンク機能は全ての版に残し、表示/非表示のみ切り替える。
   // true  → フィードバックリンクをホーム・X秒ドローイング終了画面に表示
   // false → 非表示（正式リリース時は false に戻すこと）
-  static const bool showFeedbackLink = true;
+  static const bool showFeedbackLink = false;
 
   // ── メンテナンス機能 ────────────────────────────────────
   // 各機能に散らばっていた検証用フラグ・数値をアプリ内から操作できる
@@ -31,7 +31,7 @@ abstract class AppConfig {
   //   件数表示）は保存されず、アプリ再起動でリリース時の初期値に戻る。
   //   ただし「保持上限到達フラグ」（Hive）と「初回オンボーディングのリセット」
   //   （SharedPreferences）は、押した時点で実データに作用し、永続化される。
-  static const bool featureMaintenance = true;
+  static const bool featureMaintenance = false;
 
   // ── デバッグログ ────────────────────────────────────────
   // true  → AppLogger.log() の内容を logcat / コンソールに出力する

@@ -113,7 +113,7 @@ class _HabitTimerScreenState extends ConsumerState<HabitTimerScreen> {
         s.isBreak ? Colors.green.shade50 : AppColors.themeLight;
     final phaseBorderColor =
         s.isBreak ? Colors.green.shade200 : AppColors.themeBorder;
-    // ボタン色は常に紫（AppColors.theme）
+    // ボタン色は常にテーマカラー（AppColors.theme）
     const phaseButtonColor = AppColors.theme;
 
     return Scaffold(
