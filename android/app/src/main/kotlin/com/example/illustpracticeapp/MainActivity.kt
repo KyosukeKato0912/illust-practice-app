@@ -1,4 +1,4 @@
-package com.example.illustpracticeapp
+package com.github.tyu0912release.illustbloom
 
 import io.flutter.embedding.android.FlutterActivity
 

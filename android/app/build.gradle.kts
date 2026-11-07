@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.illustpracticeapp"
+    namespace = "com.github.tyu0912release.illustbloom"
     
     // 【修正】プラグインの要求に合わせてビルド時のみ36に引き上げます
     compileSdk = 36
@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.illustpracticeapp"
+        applicationId = "com.github.tyu0912release.illustbloom"
         minSdk = flutter.minSdkVersion
         
         // 【最重要】アプリの実行挙動（通知制限など）はAndroid 15（35）として安全に動作させます
